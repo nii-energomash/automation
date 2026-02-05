@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Resolve tag from ref
+description: Извлечение git-тега из переданного git-ref (используется при публикации по тегу)
+
+inputs:
+  ref:
+    required: false
+    description: Git-ref (если не передан, используется github.ref)
+
+outputs:
+  tag:
+    value: ${{ steps.resolve.outputs.tag }}
+    description: Resolved git-tag
+
+runs:
+  using: composite
+  steps:
+    - name: 🏷️ Resolve tag from ref
+      id: resolve
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        REF="${{ inputs.ref != '' && inputs.ref || github.ref }}"
+
+        if [ -z "${REF}" ]; then
+          echo "❌ Ошибка: ref не определён"
+          exit 1
+        fi
+
+        TAG="${REF#refs/tags/}"
+
+        if [ "${TAG}" = "${REF}" ]; then
+          echo "❌ Ошибка: переданный ref '${REF}' не указывает на git-тег"
+          exit 1
+        fi
+
+        echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+        echo "📌 Тег из ref: ${TAG}"

@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Reusable Docker build & push
+description: >
+    Переиспользуемый workflow, описывающий сборку и push docker-образа
+
+on:
+  workflow_call:
+    inputs:
+      tags:
+        required: true
+        type: string
+        description: |
+          Многострочный список тегов docker (без указания registry/image),
+          например:
+            sha-abcdef
+            1.2.3
+            latest
+      ref:
+        required: false
+        type: string
+        description: Git-ref
+      registry:
+        required: false
+        type: string
+        default: 'ghcr.io'
+        description: Регистр образов
+      image-name:
+        required: false
+        type: string
+        default: ''
+        description: Имя образа
+    secrets:
+      registry-token:
+        required: true
+      package-token:
+        required: true
+
+jobs:
+  reusable-build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🛒 Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: 🔐 Log in to container registry (${{ inputs.registry }})
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ inputs.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.registry-token }}
+
+      - name: 🐳 Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ inputs.tags }}
+          secrets: |
+            PACKAGES_TOKEN=${{ secrets.package-token }}

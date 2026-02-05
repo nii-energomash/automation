@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Resolve tag to ref
+description: Получение git-ref по переданному git-тегу (используется при ручной публикации по тегу)
+
+inputs:
+  tag:
+    required: true
+    description: Тег в фомате v*.*.*
+
+outputs:
+  ref:
+    value: ${{ steps.resolve.outputs.ref }}
+    description: Resolved git-ref (refs/tags/...)
+
+runs:
+  using: composite
+  steps:
+    - name: 🔍 Validate tag format
+      uses: ./.github/actions/validate-tag-format
+      with:
+        tag: ${{ inputs.tag }}
+
+    - name: ➡️ Resolve tag to ref
+      id: resolve
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        TAG="${{ inputs.tag }}"
+        echo "🔎 Input tag: $TAG"
+
+        REF="refs/tags/$TAG"
+
+        echo "🔍 Проверка существования тега '$TAG'..."
+        if ! git show-ref --verify "$REF" >/dev/null 2>&1; then
+          echo "❌ Ошибка: тег '$TAG' не найден в репозитории"
+          echo ""
+          echo "Доступные теги:"
+          git tag -l --sort=-version:refname "v*" | head -10
+          echo ""
+          exit 1
+        fi
+
+        echo "ref=${REF}" >> $GITHUB_OUTPUT
+        echo "📌 Full ref: $REF"

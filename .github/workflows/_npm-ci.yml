@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Reusable Node.js CI
+description: >
+    Переиспользуемый workflow, описывающий Continuous Integration для Node.js проектов
+
+on:
+  workflow_call:
+    inputs:
+      publish-artifact:
+        required: false
+        type: boolean
+        default: false
+        description: 'Сохранять dist/ как артефакт'
+
+      ref:
+        required: false
+        type: string
+        default: ''
+        description: 'Указатель на коммит (используется при сборке по тегу)'
+
+      node-version:
+        required: false
+        type: string
+        default: '20'
+        description: 'Версия Node.js'
+
+      npm-scopes-with-registers:
+        type: string
+        required: false
+        default: ''
+        description: >
+          Массив строк, разделенный переносом строки, 
+          и содержащий scope и адрес регистра в формате
+          @<scope>:registry=<uri>.
+          Например: @username:registry=https://npm.pkg.github.com
+
+    secrets:
+      npm-token:
+        required: false
+        description: 'Токен для приватных NPM регистров'
+
+jobs:
+  reusable-ci:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: 🛒 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.ref != '' && inputs.ref || github.ref }}
+
+      - name: ✨ Setup Node.js (version ${{ inputs.node-version }})
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+
+      # Если передан inputs.npm-scopes-with-registers, создаем .npmrc файл.
+      # Разбиваем inputs.npm-scopes-with-registers на отдельные строки
+      # и дописываем их в .npmrc.
+      #
+      # Обратить внимание, что для приватных регистров требуется передать NPM токен.
+      # Однако, если пакет публичный, это может привести к ошибке 403 Forbidden
+      - name: 📝 Configure npm registries
+        if: ${{ inputs.npm-scopes-with-registers != '' }}
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "❌ При указании scope+registry требуется NPM токен"
+            exit 1
+          fi
+
+          echo "Generating ~/.npmrc"
+          : > ~/.npmrc
+
+          while IFS= read -r registry_src; do
+            [ -z "$registry_src" ] && continue
+            echo "$registry_src" >> ~/.npmrc
+          done <<'EOF'
+          ${{ inputs.npm-scopes-with-registers }}
+          EOF
+
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
+
+      - name: 📦 Install dependencies
+        run: npm ci --no-fund
+
+      - name: 📝 Lint
+        run: npm run lint
+
+      - name: 🧪 Tests
+        run: npm test
+
+      - name: 🛠️ Build
+        run: npm run build
+
+      - name: 📦 Upload artifact
+        if: ${{ inputs.publish-artifact }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: dist/
+          retention-days: 1

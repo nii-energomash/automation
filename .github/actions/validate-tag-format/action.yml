@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Validate tag format
+description: Валидация git-тега в формате v*.*.*
+
+inputs:
+  tag:
+    required: true
+    description: Git-тег
+
+runs:
+  using: composite
+  steps:
+    - name: 🔍 Validate git-tag
+      id: resolve
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        TAG="${{ inputs.tag }}"
+
+        echo "🔎 Input tag: $TAG"
+
+        if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "❌ Invalid tag format: $TAG"
+          echo "Expected: vMAJOR.MINOR.PATCH (e.g. v1.2.3)"
+          exit 1
+        fi
+
+        echo "✅ Формат тега OK: $TAG"

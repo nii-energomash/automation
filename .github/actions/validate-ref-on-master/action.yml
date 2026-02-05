@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Validate ref on master
+description: Проверка, что переданный git-ref находится в master-ветке
+
+inputs:
+  ref:
+    required: true
+    description: git-ref (commit hash, branch, tag)
+
+runs:
+  using: composite
+  steps:
+    - name: 🔍 Validate ref on master
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        REF="${{ inputs.ref }}"
+        echo "🔎 Checking ref: $REF"
+
+        if ! REF_COMMIT="$(git rev-parse "$REF" 2>/dev/null)"; then
+          echo "❌ Invalid ref: $REF"
+          exit 1
+        fi
+
+        echo "📝 Ref commit: $REF_COMMIT"
+
+        git fetch --no-tags origin master
+
+        if git merge-base --is-ancestor "$REF_COMMIT" origin/master; then
+          echo "✅ Ref $REF is on master"
+        else
+          echo "❌ Ref $REF is NOT on master"
+          exit 1
+        fi
