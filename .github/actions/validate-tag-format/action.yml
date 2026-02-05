@@ -12,7 +12,6 @@ runs:
   using: composite
   steps:
     - name: 🔍 Validate git-tag
-      id: resolve
       shell: bash
       run: |
         set -euo pipefail
