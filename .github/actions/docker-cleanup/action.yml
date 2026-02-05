@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Docrer cleanup
+description: >
+  Удаление docker-образов.
+  Будут удалены образы, теги которых начинаются с 'sha-',
+  и которые старше указанного возраста/
+  Требуется permissions.packages.write и permissions.contents.read
+
+inputs:
+  days-old:
+    required: true
+    type: string
+    default: "0"
+    description: "Удалить образы старше чем D дней"
+  hours-old:
+    required: true
+    type: string
+    default: "1"
+    description: "Удалить образы старше чем D дней и H часов (0–23)"
+  show-only:
+    required: false
+    default: false
+    type: boolean
+    description: "Только показать список (не удалять)"
+
+runs:
+  using: composite
+  steps:
+    - name: 🧹 Docrer cleanup
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        OWNER=${{ github.repository_owner }}
+        REPO=${{ github.event.repository.name }}
+        DAYS_OLD=${{ inputs.days-old || '0' }}
+        HOURS_OLD=${{ inputs.hours-old || '1' }}
+        SHOW_ONLY=${{ inputs.show-only || 'false' }}
+
+        echo "Owner: ${OWNER}"
+        echo "Repo:  ${REPO}"
+        echo "Days old:  ${DAYS_OLD}"
+        echo "Hours old: ${HOURS_OLD}"
+        echo "Show only: ${SHOW_ONLY}"
+
+        CUTOFF_TS=$(date -d "${DAYS_OLD} days ${HOURS_OLD} hours ago" +%s)
+        echo "Cutoff timestamp: $CUTOFF_TS ($(date -d "@$CUTOFF_TS"))"
+
+        echo "Fetching container versions…"
+
+        gh api \
+          /users/${OWNER}/packages/container/${REPO}/versions \
+          --paginate \
+          -q '
+            .[] |
+            select(.metadata.container.tags[]? | startswith("sha-")) |
+            select((.updated_at | fromdateiso8601) < '"$CUTOFF_TS"') |
+            {
+              id: .id,
+              updated_at: .updated_at,
+              tags: .metadata.container.tags
+            }
+          ' |
+        while read -r line; do
+          ID=$(echo "$line" | jq -r '.id')
+          TAGS=$(echo "$line" | jq -r '.tags | join(", ")')
+          UPDATED=$(echo "$line" | jq -r '.updated_at')
+
+          echo "→ Found candidate:"
+          echo "    id: $ID"
+          echo "    tags: $TAGS"
+          echo "    updated_at: $UPDATED"
+
+          if [ "${SHOW_ONLY}" = "true" ]; then
+            echo "    (dry-run, not deleting)"
+          else
+            echo "    Deleting version $ID"
+            gh api \
+              --method DELETE \
+              /users/${OWNER}/packages/container/${REPO}/versions/$ID
+          fi
+        done
