@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Setup NPM package version
+description: Установка версии npm-пакета на основе git-тега
+
+inputs:
+  tag:
+    required: true
+    type: string
+    description: Git-тег в формате 'v*.*.*'
+
+runs:
+  using: composite
+  steps:
+    - name: Validate git-tag format
+      uses: ./.github/actions/validate-tag-format
+      with:
+        tag: ${{ inputs.tag }}
+
+    - name: Set package version
+      shell: bash
+      run: |
+        TAG="${{ inputs.tag }}"
+        VERSION="${TAG#v}"
+
+        npm version "$VERSION" \
+          --no-git-tag-version \
+          --allow-same-version
+
+        echo "📌 Set package version: ${VERSION}"
