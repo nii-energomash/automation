@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: (reusable) Republish NPM Package Manually
+description: >
+  Переиспользуемый workflow повторной публикации NPM пакета по указанному git-тегу вида 'v*.*.*'
+  Запускать вручную через UI
+
+on:
+  workflow_call:
+    inputs:
+      git-tag:
+        required: true
+        type: string
+        description: Имя git-тега для повторной публикации (например, v1.2.3)
+
+      npm-tag:
+        required: false
+        type: string
+        default: replay
+        description: Имя npm тега. Если не указать, то добавится тег :latest, что нежелательно при повторной публикации
+
+      node-version:
+        required: false
+        type: string
+        default: "20"
+        description: "Версия Node.js"
+
+      npm-scopes-with-registers:
+        type: string
+        required: false
+        default: ""
+        description: >
+          Массив строк, разделенный переносом строки,
+          и содержащий scope и адрес регистра в формате
+          @\<scope\>:registry=\<uri\>.
+          Например: @username:registry=https://npm.pkg.github.com
+
+    secrets:
+      npm-token:
+        required: false
+        description: "Токен для приватных NPM регистров"
+
+jobs:
+  prepare-and-validate:
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.tag.outputs.ref }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tag to ref
+        uses: nii-energomash/automation/.github/actions/resolve-tag-to-ref@master
+        id: tag
+        with:
+          tag: ${{ inputs.git-tag }}
+
+      - name: Validate tag on master
+        uses: nii-energomash/automation/.github/actions/validate-ref-on-master@master
+        with:
+          ref: ${{ steps.tag.outputs.ref }}
+
+  ci:
+    needs: prepare-and-validate
+    uses: nii-energomash/automation/.github/workflows/npm-ci.yml@master
+    with:
+      node-version: ${{ inputs.node-version }}
+      npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
+      ref: ${{ needs.prepare-and-validate.outputs.ref }}
+
+  publish:
+    needs: [prepare-and-validate, ci]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.prepare-and-validate.outputs.ref }}
+
+      - name: Set package version from tag
+        uses: nii-energomash/automation/.github/actions/npm-setup-package-version-from-tag@master
+        with:
+          tag: ${{ inputs.git-tag }}
+
+      - name: Setup Node.js (version ${{ inputs.node-version }})
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Configure NPM registries
+        if: ${{ inputs.npm-scopes-with-registers != '' }}
+        uses: nii-energomash/automation/.github/actions/npm-registries-configure@master
+        with:
+          npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
+
+      - name: Install dependencies
+        run: npm ci --no-fund
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to Github Registry
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
