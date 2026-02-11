@@ -30,7 +30,7 @@ on:
         required: false
         default: ""
         description: >
-          Массив строк, разделенный переносом строки, 
+          Массив строк, разделенный переносом строки,
           и содержащий scope и адрес регистра в формате
           @<scope>:registry=<uri>.
           Например: @username:registry=https://npm.pkg.github.com
@@ -71,8 +71,7 @@ jobs:
         if: ${{ inputs.npm-scopes-with-registers != '' }}
         uses: nii-energomash/automation/.github/actions/npm-registries-configure@master
         with:
-          NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
-          SCOPES_WITH_REGISTERS: ${{ inputs.npm-scopes-with-registers }}
+          npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
 
       - name: 📦 Install dependencies
         run: npm ci --no-fund
