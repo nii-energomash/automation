@@ -76,8 +76,7 @@ jobs:
       - name: Configure NPM registries
         uses: nii-energomash/automation/.github/actions/npm-registries-configure@master
         with:
-          NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
-          SCOPES_WITH_REGISTERS: ${{ inputs.npm-scopes-with-registers }}
+          npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
 
       - name: Install dependencies
         run: npm ci --no-fund
