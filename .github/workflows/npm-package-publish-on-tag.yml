@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: (reusable) Publish release NPM Package on Tag
+description: >
+  Переиспользуемый workflow, описывающий публикацию NPM-пакета при добавлении git-тега вида 'v*.*.*'
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        required: false
+        type: string
+        default: "20"
+        description: "Версия Node.js"
+
+      npm-scopes-with-registers:
+        type: string
+        required: false
+        default: ""
+        description: >
+          Массив строк, разделенный переносом строки, 
+          и содержащий scope и адрес регистра в формате
+          @<scope>:registry=<uri>.
+          Например: @username:registry=https://npm.pkg.github.com
+
+    secrets:
+      npm-token:
+        required: false
+        description: "Токен для приватных NPM регистров"
+
+jobs:
+  prepare-and-validate:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tag from ref
+        uses: nii-energomash/automation/.github/actions/resolve-tag-from-ref@master
+        id: tag
+
+      - name: Validate tag on master
+        uses: nii-energomash/automation/.github/actions/validate-ref-on-master@master
+        with:
+          ref: ${{ github.ref }}
+
+  ci:
+    needs: prepare-and-validate
+    uses: nii-energomash/automation/.github/workflows/npm-ci.yml@master
+    with:
+      node-version: ${{ inputs.node-version }}
+      npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
+    secrets:
+      npm-token: ${{ secrets.npm-token }}
+
+  publish:
+    needs: [prepare-and-validate, ci]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js (version ${{ inputs.node-version }})
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Configure NPM registries
+        uses: nii-energomash/automation/.github/actions/npm-registries-configure@master
+        with:
+          NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
+          SCOPES_WITH_REGISTERS: ${{ inputs.npm-scopes-with-registers }}
+
+      - name: Install dependencies
+        run: npm ci --no-fund
+
+      - name: Set package version from tag
+        uses: nii-energomash/automation/.github/actions/npm-setup-package-version-from-tag@master
+        with:
+          tag: ${{ needs.prepare-and-validate.outputs.tag }}
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to Github Registry
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
