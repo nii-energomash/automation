@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 
-name: Reusable Node.js CI
+name: (reusable) Node.js CI
 description: >
     Переиспользуемый workflow, описывающий Continuous Integration для Node.js проектов
 

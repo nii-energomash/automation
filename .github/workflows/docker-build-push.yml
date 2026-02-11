@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 
-name: Reusable Docker build & push
+name: (reusable) Docker build & push
 description: >
     Переиспользуемый workflow, описывающий сборку и push docker-образа
 
