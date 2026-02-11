@@ -20,7 +20,7 @@ on:
         description: >
           Массив строк, разделенный переносом строки,
           и содержащий scope и адрес регистра в формате
-          @<scope>:registry=<uri>.
+          @\<scope\>:registry=\<uri\>.
           Например: @username:registry=https://npm.pkg.github.com
 
     secrets:
