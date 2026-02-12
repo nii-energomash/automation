@@ -70,8 +70,21 @@ jobs:
         with:
           npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
 
-      - name: 🧪 Code quality checks
-        uses: nii-energomash/automation/.github/actions/npm-code-quality-checks@master
+      - name: 📦 Install dependencies
+        shell: bash
+        run: npm ci --no-fund
+
+      - name: 📝 Lint
+        shell: bash
+        run: npm run lint
+
+      - name: 🧪 Tests
+        shell: bash
+        run: npm test
+
+      - name: 🛠️ Build
+        shell: bash
+        run: npm run build
 
       - name: 📦 Upload artifact
         if: ${{ inputs.publish-artifact }}
