@@ -16,6 +16,18 @@ inputs:
     default: ""
     description: Тег, указываемый при ручной пересборке
 
+  registry:
+    required: false
+    type: string
+    default: ghcr.io
+    description: Регистр образов
+
+  image-name:
+    required: false
+    type: string
+    default: ${{ github.repository }}
+    description: Имя образа
+
 outputs:
   ref:
     value: ${{ steps.resolve.outputs.ref }}
@@ -29,6 +41,10 @@ outputs:
     value: ${{ steps.resolve.outputs.image-tag }}
     description: Версия на основе git-тега
 
+  image-tags:
+    value: ${{ steps.resolve.outputs.image-tag }}
+    description: Список тегов для docker-образа
+
 runs:
   using: composite
   steps:
@@ -38,22 +54,26 @@ runs:
       run: |
         set -euo pipefail
 
+        REPO=${{ inputs.registry }}/${{ inputs.image-name }}}
         MODE="${{ inputs.mode }}"
 
         if [[ "$MODE" == "release" ]]; then
           REF="${GITHUB_REF}"
           VERSION="${GITHUB_REF#refs/tags/v}"
           IMAGE_TAG="$VERSION"
+          IMAGE_TAGS="$REPO:$VERSION, $REPO:latest"
 
         elif [[ "$MODE" == "rebuild" ]]; then
           REF="refs/tags/${{ inputs.tag }}"
           VERSION="${{ inputs.tag }}"
-          IMAGE_TAG="${{ inputs.tag }}"
+          IMAGE_TAG="$VERSION"
+          IMAGE_TAGS="$REPO:$VERSION"
 
         elif [[ "$MODE" == "feature" ]]; then
           REF="${GITHUB_REF}"
           VERSION=""
           IMAGE_TAG="${GITHUB_SHA}"
+          IMAGE_TAGS="$REPO:$IMAGE_TAG"
 
         else
           echo "Unknown mode"
@@ -63,3 +83,4 @@ runs:
         echo "ref=$REF" >> $GITHUB_OUTPUT
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "image-tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+        echo "image-tags=$IMAGE_TAGS" >> $GITHUB_OUTPUT
