@@ -1,0 +1,144 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: (reusable) Publish release Docker Image on Tag
+description: >
+  Переиспользуемый workflow, описывающий сборку и публикацию docker образа с указанием версии
+  (соответствует git-тегу, добавленному в master-ветку)
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        required: true
+        type: string
+        default: feature
+        description: Режим сборки (release | feature | rebuild)
+
+      tag:
+        required: false
+        type: string
+        default: ""
+        description: Тег, указываемый при ручной пересборке
+
+      registry:
+        required: false
+        type: string
+        default: ghcr.io
+        description: Регистр образов
+
+      image-name:
+        required: false
+        type: string
+        default: ${{ github.repository }}
+        description: Имя образа
+
+      node-version:
+        required: false
+        type: string
+        default: "20"
+        description: Версия Node.js
+
+      npm-scopes-with-registers:
+        type: string
+        required: false
+        default: ""
+        description: >
+          Массив строк, разделенный переносом строки,
+          и содержащий scope и адрес регистра в формате
+          @\<scope\>:registry=\<uri\>.
+          Например: @username:registry=https://npm.pkg.github.com
+
+    secrets:
+      registry-token:
+        required: true
+        description: Токен для публикации Docker-образа
+
+      package-token:
+        required: true
+        description: Токен для приватных NPM регистров
+
+permissions:
+  contents: read
+  packages: write
+  attestations: write
+  id-token: write
+
+jobs:
+  ci-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧠 Resolve build context
+        uses: nii-energomash/automation/.github/actions/resolve-context@master
+        id: ctx
+        with:
+          mode: ${{ inputs.mode }}
+          tag: ${{ inputs.tag }}
+          registry: ${{ inputs.registry }}
+          image-name: ${{ inputs.image-name }}
+
+      - name: 🔍 Validate tag format
+        if: inputs.mode != 'feature'
+        uses: nii-energomash/automation/.github/actions/validate-tag-format@master
+        with:
+          tag: ${{ steps.ctx.outputs.version }}
+
+      - name: 🔍 Validate tag on master
+        if: inputs.mode != 'feature'
+        uses: ./.github/actions/validate-ref-on-master
+        with:
+          ref: ${{ steps.ctx.outputs.ref }}
+
+      - name: 🛒 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.ctx.outputs.ref }}
+
+      - name: ✨ Setup Node.js (version ${{ inputs.node-version }})
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: 📝 Configure NPM registries
+        uses: nii-energomash/automation/.github/actions/npm-registries-configure@master
+        with:
+          npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
+
+      - name: 📌 Set package version from tag
+        uses: nii-energomash/automation/.github/actions/npm-setup-package-version-from-tag@master
+        with:
+          tag: ${{ steps.ctx.outputs.version }}
+
+      - name: 📦 Install dependencies
+        shell: bash
+        run: npm ci --no-fund
+
+      - name: 📝 Lint
+        shell: bash
+        run: npm run lint
+
+      - name: 🧪 Tests
+        shell: bash
+        run: npm test
+
+      - name: 🛠️ Build
+        shell: bash
+        run: npm run build
+
+      - name: 🔐 Log in to container registry (${{ inputs.registry }})
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ inputs.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.registry-token }}
+
+      - name: 🐳 Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.ctx.outputs.image-tags }}
+          secrets: |
+            registry-token: ${{ secrets.registry-token }}
+            package-token: ${{ secrets.package-token }}

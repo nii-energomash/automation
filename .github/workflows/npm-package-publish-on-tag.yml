@@ -51,7 +51,6 @@ jobs:
           node-version: ${{ inputs.node-version }}
 
       - name: 📝 Configure NPM registries
-        if: ${{ inputs.npm-scopes-with-registers != '' }}
         uses: nii-energomash/automation/.github/actions/npm-registries-configure@master
         with:
           npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}

@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 
-name: Resolve tag to ref
+name: Resolve tag to ref (НЕ НУЖЕН?)
 description: Получение git-ref по переданному git-тегу (используется при ручной публикации по тегу)
 
 inputs:
