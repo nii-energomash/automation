@@ -13,18 +13,24 @@ inputs:
     required: false
     default: ""
     description: >
-      Массив строк, разделенный переносом строки,
-      и содержащий scope и адрес регистра в формате
-      @<scope>:registry=<uri>.
-      Например: @username:registry=https://npm.pkg.github.com
+      Массив строк, разделенный переносом строки, и содержащий scope и адрес регистра в формате
+      @<scope>:registry=<uri>. Например: @username:registry=https://npm.pkg.github.com
+
+  npm-auth-token:
+    type: string
+    required: false
+    description: |
+      Токен для аутентификации в NPM регистрах. По умолчанию используется github.token.
+      Для использования PAT передайте: secrets.YOUR_TOKEN
 
 runs:
   using: composite
   steps:
     - shell: bash
-      env:
-        SCOPES_WITH_REGISTERS: ${{ inputs.npm-scopes-with-registers }}
-        NODE_AUTH_TOKEN: ${{ github.token }}  # заменить на input или secret
+      if: ${{ inputs.npm-scopes-with-registers != '' }}
       run: |
         chmod +x "${{ github.action_path }}/registries-configure.sh"
         "${{ github.action_path }}/registries-configure.sh"
+      env:
+        SCOPES_WITH_REGISTERS: ${{ inputs.npm-scopes-with-registers }}
+        NODE_AUTH_TOKEN: ${{ inputs.npm-auth-token != '' && inputs.npm-auth-token || github.token }}
