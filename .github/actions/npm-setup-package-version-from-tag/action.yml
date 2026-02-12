@@ -13,7 +13,7 @@ runs:
   using: composite
   steps:
     - name: Validate git-tag format
-      uses: ./.github/actions/validate-tag-format
+      uses: nii-energomash/automation/.github/actions/validate-tag-format@master
       with:
         tag: ${{ inputs.tag }}
 
