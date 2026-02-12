@@ -10,11 +10,11 @@ inputs:
     default: feature
     description: Режим (release | feature | rebuild)
 
-    tag:
-      required: false
-      type: string
-      default: ""
-      description: Тег, указываемый при ручной пересборке
+  tag:
+    required: false
+    type: string
+    default: ""
+    description: Тег, указываемый при ручной пересборке
 
 outputs:
   ref:
