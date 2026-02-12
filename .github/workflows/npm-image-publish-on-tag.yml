@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: (reusable) Publish release Docker Image on Tag
+description: >
+  Переиспользуемый workflow, описывающий сборку и публикацию docker образа с указанием версии
+  (соответствует git-тегу, добавленному в master-ветку)
+
+on:
+  workflow_call:
+    inputs:
+      registry:
+        required: false
+        type: string
+        default: "ghcr.io"
+        description: Регистр образов
+      image-name:
+        required: false
+        type: string
+        default: ""
+        description: Имя образа
+      node-version:
+        required: false
+        type: string
+        default: "20"
+        description: "Версия Node.js"
+      npm-scopes-with-registers:
+        type: string
+        required: false
+        default: ""
+        description: >
+          Массив строк, разделенный переносом строки,
+          и содержащий scope и адрес регистра в формате
+          @\<scope\>:registry=\<uri\>.
+          Например: @username:registry=https://npm.pkg.github.com
+    secrets:
+      registry-token:
+        required: true
+      package-token:
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+  attestations: write
+  id-token: write
+
+jobs:
+  prepare-and-validate:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tag from ref
+        uses: nii-energomash/automation/.github/actions/resolve-tag-from-ref@master
+        id: tag
+
+      - name: Validate tag on master
+        uses: nii-energomash/automation/.github/actions/validate-ref-on-master@master
+        with:
+          ref: ${{ github.ref }}
+
+  ci:
+    needs: prepare-and-validate
+    uses: nii-energomash/automation/.github/workflows/npm-ci.yml@master
+    with:
+      node-version: ${{ inputs.node-version }}
+      npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
+    secrets:
+      npm-token: ${{ secrets.package-token }}
+
+  docker:
+    needs: [ci, prepare-and-validate]
+    uses: nii-energomash/automation/.github/workflows/docker-build-push.yml@master
+    with:
+      ref: ${{ github.ref }}
+      tags: |
+        ${{ inputs.registry }}/${{ github.repository }}:${{ needs.prepare-and-validate.outputs.tag }}
+        ${{ inputs.registry }}/${{ github.repository }}:latest
+    secrets:
+      registry-token: ${{ secrets.registry-token }}
+      package-token: ${{ secrets.package-token }}
