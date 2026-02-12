@@ -83,7 +83,7 @@ jobs:
 
       - name: 🔍 Validate tag on master
         if: inputs.mode != 'feature'
-        uses: nii-energomash/automation/.github/actions/.github/actions/validate-ref-on-master@master
+        uses: nii-energomash/automation/.github/actions/validate-ref-on-master@master
         with:
           ref: ${{ steps.ctx.outputs.ref }}
 
