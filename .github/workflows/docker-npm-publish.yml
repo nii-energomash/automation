@@ -80,6 +80,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ steps.ctx.outputs.ref }}
+          persist-credentials: true
 
       - name: 🔍 Validate tag format
         if: inputs.mode != 'feature'
