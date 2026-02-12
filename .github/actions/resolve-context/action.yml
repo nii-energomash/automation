@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Resolve context
+description: Определить контекст вызова workflow
+
+inputs:
+  mode:
+    required: true
+    type: string
+    default: feature
+    description: Режим (release | feature | rebuild)
+
+outputs:
+  ref:
+    value: ${{ steps.resolve.outputs.ref }}
+    description: Git-ref
+
+  version:
+    value: ${{ steps.resolve.outputs.version }}
+    description: Версия на основе git-тега
+
+  image-tag:
+    value: ${{ steps.resolve.outputs.image-tag }}
+    description: Версия на основе git-тега
+
+runs:
+  using: composite
+  steps:
+    - name: 🔍 Resolve context
+      id: resolve
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        MODE="${{ inputs.mode }}"
+
+        if [[ "$MODE" == "release" ]]; then
+          REF="${GITHUB_REF}"
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          IMAGE_TAG="$VERSION"
+
+        elif [[ "$MODE" == "rebuild" ]]; then
+          REF="refs/tags/${{ inputs.tag }}"
+          VERSION="${{ inputs.tag }}"
+          IMAGE_TAG="${{ inputs.tag }}"
+
+        elif [[ "$MODE" == "feature" ]]; then
+          REF="${GITHUB_REF}"
+          VERSION=""
+          IMAGE_TAG="${GITHUB_SHA}"
+
+        else
+          echo "Unknown mode"
+          exit 1
+        fi
+
+        echo "ref=$REF" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "image-tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
