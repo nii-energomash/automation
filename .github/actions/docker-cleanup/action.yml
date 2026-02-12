@@ -3,36 +3,35 @@
 name: Docrer cleanup
 description: >
   Удаление docker-образов.
-  Будут удалены образы, теги которых начинаются с 'sha-',
-  и которые старше указанного возраста/
+  Будут удалены образы, теги которых начинаются с 'sha-', и которые старше указанного возраста.
   Требуется permissions.packages.write и permissions.contents.read
 
 inputs:
   days-old:
-    required: true
+    required: false
     type: string
-    default: '0'
-    description: 'Удалить образы старше чем D дней'
+    default: "1"
+    description: "Удалить образы старше чем D дней"
   hours-old:
-    required: true
+    required: false
     type: string
-    default: '1'
-    description: 'Удалить образы старше чем D дней и H часов (0–23)'
+    default: "0"
+    description: "Удалить образы старше чем D дней и H часов (0–23)"
   show-only:
     required: false
     default: false
     type: boolean
-    description: 'Только показать список (не удалять)'
+    description: "Только показать список (не удалять)"
 
 runs:
   using: composite
   steps:
     - shell: bash
+      run: |
+        chmod +x "${{ github.action_path }}/cleanup.sh"
+        "${{ github.action_path }}/cleanup.sh"
       env:
         DAYS_OLD: ${{ inputs.days-old }}
         HOURS_OLD: ${{ inputs.hours-old }}
         SHOW_ONLY: ${{ inputs.show-only }}
         GH_TOKEN: ${{ github.token }}
-      run: |
-        chmod +x "${{ github.action_path }}/cleanup.sh"
-        "${{ github.action_path }}/cleanup.sh"
