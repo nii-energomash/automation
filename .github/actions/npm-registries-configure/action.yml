@@ -3,7 +3,7 @@
 name: NPM registries configure
 description: >
   Настраивает регистры NPM для указанных scopes.
-  Для работы получает массив строк, разделенный переносом строки, 
+  Для работы получает массив строк, разделенный переносом строки,
   и содержащий scope и адрес регистра в формате @<scope>:registry=<uri>.
   Например: @username:registry=https://npm.pkg.github.com
 
@@ -13,7 +13,7 @@ inputs:
     required: false
     default: ""
     description: >
-      Массив строк, разделенный переносом строки, 
+      Массив строк, разделенный переносом строки,
       и содержащий scope и адрес регистра в формате
       @<scope>:registry=<uri>.
       Например: @username:registry=https://npm.pkg.github.com
@@ -24,7 +24,7 @@ runs:
     - shell: bash
       env:
         SCOPES_WITH_REGISTERS: ${{ inputs.npm-scopes-with-registers }}
-        NODE_AUTH_TOKEN: ${{ github.token }}
+        NODE_AUTH_TOKEN: ${{ github.token }}  # заменить на input или secret
       run: |
         chmod +x "${{ github.action_path }}/registries-configure.sh"
         "${{ github.action_path }}/registries-configure.sh"
