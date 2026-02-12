@@ -75,6 +75,12 @@ jobs:
           registry: ${{ inputs.registry }}
           image-name: ${{ inputs.image-name }}
 
+      - name: 🛒 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.ctx.outputs.ref }}
+
       - name: 🔍 Validate tag format
         if: inputs.mode != 'feature'
         uses: nii-energomash/automation/.github/actions/validate-tag-format@master
@@ -85,12 +91,6 @@ jobs:
         if: inputs.mode != 'feature'
         uses: nii-energomash/automation/.github/actions/validate-ref-on-master@master
         with:
-          ref: ${{ steps.ctx.outputs.ref }}
-
-      - name: 🛒 Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
           ref: ${{ steps.ctx.outputs.ref }}
 
       - name: ✨ Setup Node.js (version ${{ inputs.node-version }})
