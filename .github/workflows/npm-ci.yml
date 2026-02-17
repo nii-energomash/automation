@@ -40,7 +40,7 @@ on:
           Однако, если пакет публичный, это может привести к ошибке 403 Forbidden
 
     secrets:
-      npm-token:
+      node-auth-token:
         required: false
         description: Токен для приватных NPM регистров
 
@@ -69,6 +69,7 @@ jobs:
         uses: nii-energomash/automation/.github/actions/npm-registries-configure@master
         with:
           npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
+          node-auth-token: ${{ secrets.node-auth-token }}
 
       - name: 📦 Install dependencies
         shell: bash
