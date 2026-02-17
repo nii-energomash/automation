@@ -140,4 +140,4 @@ jobs:
           push: true
           tags: ${{ steps.ctx.outputs.image-tags }}
           secrets: |
-            NODE_AUTH_TOKEN: ${{ secrets.node-auth-token }}
+            NODE_AUTH_TOKEN=${{ secrets.node-auth-token }}
