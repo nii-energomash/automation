@@ -133,9 +133,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.docker-auth-token }}
 
-      - name: Check Tags Step
+      - name: Check Context Result
+        if: true
         shell: bash
         run: |
+          echo ${{ steps.ctx.outputs.ref }}
+          echo ${{ steps.ctx.outputs.version }}
+          echo ${{ steps.ctx.outputs.image-tag }}
           echo ${{ steps.ctx.outputs.image-references }}
 
       - name: 🐳 Build and push Docker image
