@@ -40,9 +40,9 @@ runs:
       if: inputs.tag == ''
       run: |
         EMPTY_VERSION="v0.0.0"
-        REF="${{ github.ref }}"
+        HASH=$(git rev-parse --short HEAD)
 
-        VERSION="${EMPTY_VERSION}-${REF}"
+        VERSION="${EMPTY_VERSION}-${HASH}"
 
         npm version "$VERSION" \
           --no-git-tag-version \
