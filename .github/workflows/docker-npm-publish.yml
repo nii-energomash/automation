@@ -49,12 +49,12 @@ on:
           Например: @username:registry=https://npm.pkg.github.com
 
     secrets:
-      registry-token:
+      docker-auth-token:
         required: true
         description: Токен для публикации Docker-образа
 
-      package-token:
-        required: true
+      node-auth-token:
+        required: false
         description: Токен для приватных NPM регистров
 
 permissions:
@@ -103,6 +103,7 @@ jobs:
         uses: nii-energomash/automation/.github/actions/npm-registries-configure@master
         with:
           npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
+          node-auth-token: ${{ secrets.node-auth-token }}
 
       - name: 📌 Set package version from tag
         uses: nii-energomash/automation/.github/actions/npm-setup-package-version-from-tag@master
@@ -130,7 +131,7 @@ jobs:
         with:
           registry: ${{ inputs.registry }}
           username: ${{ github.actor }}
-          password: ${{ secrets.registry-token }}
+          password: ${{ secrets.docker-auth-token }}
 
       - name: 🐳 Build and push Docker image
         uses: docker/build-push-action@v5
@@ -139,5 +140,4 @@ jobs:
           push: true
           tags: ${{ steps.ctx.outputs.image-tags }}
           secrets: |
-            registry-token: ${{ secrets.registry-token }}
-            package-token: ${{ secrets.package-token }}
+            NODE_AUTH_TOKEN: ${{ secrets.node-auth-token }}
