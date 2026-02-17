@@ -16,7 +16,7 @@ inputs:
       Массив строк, разделенный переносом строки, и содержащий scope и адрес регистра в формате
       @<scope>:registry=<uri>. Например: @username:registry=https://npm.pkg.github.com
 
-  npm-auth-token:
+  node-auth-token:
     type: string
     required: false
     description: |
@@ -33,4 +33,4 @@ runs:
         "${{ github.action_path }}/registries-configure.sh"
       env:
         SCOPES_WITH_REGISTERS: ${{ inputs.npm-scopes-with-registers }}
-        NODE_AUTH_TOKEN: ${{ inputs.npm-auth-token != '' && inputs.npm-auth-token || github.token }}
+        NODE_AUTH_TOKEN: ${{ inputs.node-auth-token }}

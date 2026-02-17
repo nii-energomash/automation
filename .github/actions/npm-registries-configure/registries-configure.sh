@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ -z "$NODE_AUTH_TOKEN" ]; then
-    echo "❌ При указании scope+registry требуется NPM токен"
-    exit 1
-fi
-
 echo "Generating ~/.npmrc"
 : > ~/.npmrc
 
@@ -16,4 +11,11 @@ done <<'EOF'
 ${SCOPES_WITH_REGISTERS}
 EOF
 
-echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
+if [ -n "${NODE_AUTH_TOKEN:-}" ]; then
+    echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
+    echo "🔑 NPM токен добавлен в конфигурацию"
+else
+    echo "🔓 NODE_AUTH_TOKEN не задан, строка с токеном не добавлена"
+fi
+
+echo "📝 Конфигурация NPM сохранена в ~/.npmrc"
