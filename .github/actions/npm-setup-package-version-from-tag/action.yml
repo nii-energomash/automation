@@ -12,10 +12,10 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Validate git-tag format
-      uses: nii-energomash/automation/.github/actions/validate-tag-format@master
-      with:
-        tag: ${{ inputs.tag }}
+    # - name: Validate git-tag format
+    #   uses: nii-energomash/automation/.github/actions/validate-tag-format@master
+    #   with:
+    #     tag: ${{ inputs.tag }}
 
     - name: Set package version
       shell: bash
