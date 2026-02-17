@@ -56,10 +56,17 @@ runs:
       run: |
         set -euo pipefail
 
-        REPO=${{ inputs.registry }}/${{ inputs.image-name }}}
+        REPO="${{ inputs.registry }}/${{ inputs.image-name }}"
         MODE="${{ inputs.mode }}"
 
-        if [[ "$MODE" == "release" ]]; then
+        if [[ "$MODE" == "feature" ]]; then
+          COMMIT_HASH="${{ github.sha }}"
+          REF="${GITHUB_REF}"
+          VERSION=""
+          TAG="$COMMIT_HASH"
+          IMAGE_REFERENCES="$REPO:$TAG"
+
+        elif [[ "$MODE" == "release" ]]; then
           REF="${GITHUB_REF}"
           VERSION="${GITHUB_REF#refs/tags/v}"
           TAG=VERSION
@@ -71,14 +78,8 @@ runs:
           TAG=VERSION
           IMAGE_REFERENCES="$REPO:$TAG"
 
-        elif [[ "$MODE" == "feature" ]]; then
-          REF="${GITHUB_REF}"
-          VERSION=""
-          TAG=REF
-          IMAGE_REFERENCES="$REPO:$REF"
-
         else
-          echo "Unknown mode"
+          echo "❌ Неизвестный режим mode: $MODE"
           exit 1
         fi
 
