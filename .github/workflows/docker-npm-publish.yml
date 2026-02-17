@@ -136,13 +136,13 @@ jobs:
       - name: Check Tags Step
         shell: bash
         run: |
-          echo ${{ steps.ctx.outputs.image-tags }}
+          echo ${{ steps.ctx.outputs.image-references }}
 
       - name: 🐳 Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ steps.ctx.outputs.image-tags }}
+          tags: ${{ steps.ctx.outputs.image-references }}
           secrets: |
             NODE_AUTH_TOKEN=${{ secrets.node-auth-token }}
