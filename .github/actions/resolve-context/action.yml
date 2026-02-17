@@ -37,9 +37,15 @@ outputs:
     value: ${{ steps.resolve.outputs.version }}
     description: Версия на основе git-тега
 
-  image-tags:
-    value: ${{ steps.resolve.outputs.image-tags }}
-    description: Список тегов для docker-образа
+  image-tag:
+    value: ${{ steps.resolve.outputs.image-tag }}
+    description: Версия на основе git-тега (например, v1.2.3)
+
+  image-references:
+    value: ${{ steps.resolve.outputs.image-references }}
+    description: >
+      Список имен образов в формате
+      <registry>/\<image-name\>:\<version\>
 
 runs:
   using: composite
@@ -56,17 +62,20 @@ runs:
         if [[ "$MODE" == "release" ]]; then
           REF="${GITHUB_REF}"
           VERSION="${GITHUB_REF#refs/tags/v}"
-          IMAGE_TAGS="$REPO:$VERSION, $REPO:latest"
+          TAG=VERSION
+          IMAGE_REFERENCES="$REPO:$TAG, $REPO:latest"
 
         elif [[ "$MODE" == "rebuild" ]]; then
           REF="refs/tags/${{ inputs.tag }}"
           VERSION="${{ inputs.tag }}"
-          IMAGE_TAGS="$REPO:$VERSION"
+          TAG=VERSION
+          IMAGE_REFERENCES="$REPO:$TAG"
 
         elif [[ "$MODE" == "feature" ]]; then
           REF="${GITHUB_REF}"
-          VERSION="${GITHUB_SHA}"
-          IMAGE_TAGS="$REPO:$VERSION"
+          VERSION=""
+          TAG=REF
+          IMAGE_REFERENCES="$REPO:$REF"
 
         else
           echo "Unknown mode"
@@ -75,4 +84,5 @@ runs:
 
         echo "ref=$REF" >> $GITHUB_OUTPUT
         echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "image-tags=$IMAGE_TAGS" >> $GITHUB_OUTPUT
+        echo "image-tag=$TAG" >> $GITHUB_OUTPUT
+        echo "image-references=$IMAGE_REFERENCES" >> $GITHUB_OUTPUT
