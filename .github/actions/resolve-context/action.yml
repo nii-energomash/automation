@@ -83,6 +83,13 @@ runs:
           exit 1
         fi
 
+        echo "✅ Context resolved:"
+        echo "  ref: $REF"
+        echo "  version: $VERSION"
+        echo "  image-tag: $TAG"
+        echo "  image-references:"
+        echo "$IMAGE_REFERENCES" | tr ',' '\n' | sed 's/^/    - /'
+
         echo "ref=$REF" >> $GITHUB_OUTPUT
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "image-tag=$TAG" >> $GITHUB_OUTPUT
