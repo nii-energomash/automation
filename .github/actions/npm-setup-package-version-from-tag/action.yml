@@ -42,7 +42,7 @@ runs:
         EMPTY_VERSION="v0.0.0"
         REF="${{ github.ref }}"
 
-        VERSION="${EMPTY_VERSION}-${HASH}"
+        VERSION="${EMPTY_VERSION}-${REF}"
 
         npm version "$VERSION" \
           --no-git-tag-version \
