@@ -137,10 +137,12 @@ jobs:
         if: true
         shell: bash
         run: |
-          echo ${{ steps.ctx.outputs.ref }}
-          echo ${{ steps.ctx.outputs.version }}
-          echo ${{ steps.ctx.outputs.image-tag }}
-          echo ${{ steps.ctx.outputs.image-references }}
+          echo "✅ Context resolved:"
+          echo "  ref: ${{ steps.ctx.outputs.ref }}"
+          echo "  version: ${{ steps.ctx.outputs.version }}"
+          echo "  image-tag: ${{ steps.ctx.outputs.image-tag }}"
+          echo "  image-references:"
+          echo "${{ steps.ctx.outputs.image-references }}" | tr ',' '\n' | sed 's/^/    - /'
 
       - name: 🐳 Build and push Docker image
         uses: docker/build-push-action@v5
