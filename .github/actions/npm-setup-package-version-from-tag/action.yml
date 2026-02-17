@@ -5,26 +5,56 @@ description: Установка версии npm-пакета на основе 
 
 inputs:
   tag:
-    required: true
+    required: false
     type: string
-    description: Git-тег в формате 'v*.*.*'
+    description: >
+      Git-тег в формате 'v*.*.*'.
+      Если не указан, используется значение из github.ref.
+
+outputs:
+  tag:
+    value: ${{ steps.version-final.outputs.package-version }}
+    description: Resolved git-tag
 
 runs:
   using: composite
   steps:
-    # - name: Validate git-tag format
-    #   uses: nii-energomash/automation/.github/actions/validate-tag-format@master
-    #   with:
-    #     tag: ${{ inputs.tag }}
-
-    - name: Set package version
+    - name: Set package version from tag
+      id: version-tag
       shell: bash
+      if: inputs.tag != ''
       run: |
-        TAG="${{ inputs.tag }}"
-        VERSION="${TAG#v}"
+        VERSION="${{ inputs.tag }}"
+        VERSION="${VERSION#v}"
 
         npm version "$VERSION" \
           --no-git-tag-version \
           --allow-same-version
 
-        echo "📌 Set package version: ${VERSION}"
+        echo "📌 Установлена версия npm пакета из git-тега: ${VERSION}"
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+    - name: Set package version from commit hash
+      id: version-hash
+      shell: bash
+      if: inputs.tag == ''
+      run: |
+        EMPTY_VERSION="v0.0.0"
+        REF="${{ github.ref }}"
+
+        VERSION="${EMPTY_VERSION}-${HASH}"
+
+        npm version "$VERSION" \
+          --no-git-tag-version \
+          --allow-same-version
+
+        echo "📌 Установлена версия npm пакета из hash коммита: ${VERSION}"
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+    - name: Output final version
+      id: version-final
+      shell: bash
+      run: |
+        FINAL_VERSION="${{ steps.version-tag.outputs.version || steps.version-hash.outputs.version }}"
+        echo "✅ Final package version: ${FINAL_VERSION}"
+        echo "package-version=${FINAL_VERSION}" >> $GITHUB_OUTPUT
