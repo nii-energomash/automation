@@ -62,20 +62,20 @@ runs:
         if [[ "$MODE" == "feature" ]]; then
           COMMIT_HASH="${{ github.sha }}"
           REF="${GITHUB_REF}"
-          VERSION=""
           TAG="$COMMIT_HASH"
+          VERSION=""
           IMAGE_REFERENCES="$REPO:$TAG"
 
         elif [[ "$MODE" == "release" ]]; then
           REF="${GITHUB_REF}"
+          TAG="${GITHUB_REF#refs/tags/}"
           VERSION="${GITHUB_REF#refs/tags/v}"
-          TAG=VERSION
           IMAGE_REFERENCES="$REPO:$TAG, $REPO:latest"
 
         elif [[ "$MODE" == "rebuild" ]]; then
           REF="refs/tags/${{ inputs.tag }}"
-          VERSION="${{ inputs.tag }}"
-          TAG=VERSION
+          TAG="${{ inputs.tag }}"
+          VERSION="${TAG#v}"
           IMAGE_REFERENCES="$REPO:$TAG"
 
         else
