@@ -78,6 +78,7 @@ jobs:
         uses: nii-energomash/automation/.github/actions/npm-registries-configure@master
         with:
           npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
+          node-auth-token: ${{ secrets.node-auth-token }}
 
       - name: 📌 Set package version from tag
         uses: nii-energomash/automation/.github/actions/npm-setup-package-version-from-tag@master
