@@ -62,7 +62,7 @@ runs:
         if [[ "$MODE" == "feature" ]]; then
           COMMIT_HASH="${{ github.sha }}"
           REF="${GITHUB_REF}"
-          TAG="$COMMIT_HASH"
+          TAG="sha-$COMMIT_HASH"
           VERSION=""
           IMAGE_REFERENCES="$REPO:$TAG"
 
