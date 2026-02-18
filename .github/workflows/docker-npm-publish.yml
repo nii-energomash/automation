@@ -86,7 +86,7 @@ jobs:
         if: inputs.mode != 'feature'
         uses: nii-energomash/automation/.github/actions/validate-tag-format@master
         with:
-          tag: ${{ steps.ctx.outputs.image-tag }}
+          tag: ${{ steps.ctx.outputs.tag }}
 
       - name: 🔍 Validate tag on master
         if: inputs.mode != 'feature'

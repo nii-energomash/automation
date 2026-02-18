@@ -37,8 +37,8 @@ outputs:
     value: ${{ steps.resolve.outputs.version }}
     description: Версия на основе git-тега
 
-  image-tag:
-    value: ${{ steps.resolve.outputs.image-tag }}
+  tag:
+    value: ${{ steps.resolve.outputs.tag }}
     description: Версия на основе git-тега (например, v1.2.3)
 
   image-references:
@@ -86,11 +86,11 @@ runs:
         echo "✅ Context resolved:"
         echo "  ref: $REF"
         echo "  version: $VERSION"
-        echo "  image-tag: $TAG"
+        echo "  tag: $TAG"
         echo "  image-references:"
         echo "$IMAGE_REFERENCES" | tr ',' '\n' | sed 's/^/    - /'
 
         echo "ref=$REF" >> $GITHUB_OUTPUT
         echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "image-tag=$TAG" >> $GITHUB_OUTPUT
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
         echo "image-references=$IMAGE_REFERENCES" >> $GITHUB_OUTPUT
