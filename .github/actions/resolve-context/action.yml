@@ -70,7 +70,7 @@ runs:
           REF="${GITHUB_REF}"
           TAG="${GITHUB_REF#refs/tags/}"
           VERSION="${GITHUB_REF#refs/tags/v}"
-          IMAGE_REFERENCES="$REPO:$TAG, $REPO:latest"
+          IMAGE_REFERENCES="$REPO:$TAG,$REPO:latest"
 
         elif [[ "$MODE" == "rebuild" ]]; then
           REF="refs/tags/${{ inputs.tag }}"
