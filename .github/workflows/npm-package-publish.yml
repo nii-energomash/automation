@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: (reusable) Publish release NPM Package on Tag
+description: >
+  Переиспользуемый workflow, описывающий сборку и публикацию NPM-пакета с указанием версии
+  (соответствует git-тегу вида 'v*.*.*', добавленному в master-ветку)
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        required: true
+        type: string
+        default: feature
+        description: Режим публикации (release | rebuild)
+
+      tag:
+        required: false
+        type: string
+        default: ""
+        description: Тег, указываемый при ручной пересборке
+
+      node-version:
+        required: false
+        type: string
+        default: "20"
+        description: Версия Node.js
+
+      npm-scopes-with-registers:
+        type: string
+        required: false
+        default: ""
+        description: >
+          Массив строк, разделенный переносом строки, и содержащий scope и адрес регистра в формате
+          @\<scope\>:registry=\<uri\>. Например: @username:registry=https://npm.pkg.github.com
+
+    secrets:
+      node-auth-token:
+        required: false
+        description: Токен для приватных NPM регистров
+
+jobs:
+  ci-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧠 Resolve build context
+        uses: nii-energomash/automation/.github/actions/resolve-context@master
+        id: ctx
+        with:
+          mode: ${{ inputs.mode }}
+          tag: ${{ inputs.tag }}
+
+      - name: 🛒 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.ctx.outputs.ref }}
+          persist-credentials: true
+
+      - name: 🔍 Validate tag format
+        if: inputs.mode == 'rebuild'
+        uses: nii-energomash/automation/.github/actions/validate-tag-format@master
+        with:
+          tag: ${{ steps.ctx.outputs.tag }}
+
+      - name: 🔍 Validate tag on master
+        uses: nii-energomash/automation/.github/actions/validate-ref-on-master@master
+        with:
+          ref: ${{ steps.ctx.outputs.ref }}
+
+      - name: ✨ Setup Node.js (version ${{ inputs.node-version }})
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: 📝 Configure NPM registries
+        uses: nii-energomash/automation/.github/actions/npm-registries-configure@master
+        with:
+          npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
+          node-auth-token: ${{ secrets.node-auth-token }}
+
+      - name: 📌 Set package version from tag
+        uses: nii-energomash/automation/.github/actions/npm-setup-package-version-from-tag@master
+        with:
+          tag: ${{ steps.ctx.outputs.version }}
+
+      - name: 📦 Install dependencies
+        shell: bash
+        run: npm ci --no-fund
+
+      - name: 📝 Lint
+        shell: bash
+        run: npm run lint
+
+      - name: 🧪 Tests
+        shell: bash
+        run: npm test
+
+      - name: 🛠️ Build
+        shell: bash
+        run: npm run build
+
+      - name: Publish to Github Registry
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.node-auth-token }}
