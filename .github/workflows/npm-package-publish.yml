@@ -114,7 +114,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.node-auth-token }}
 
       - name: Publish to Github Registry with specified Tag
-        if: inputs.mode == 'release'
+        if: inputs.mode == 'rebuild'
         run: npm publish --tag "${{ inputs.npm-tag }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.node-auth-token }}
