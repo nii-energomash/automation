@@ -7,7 +7,7 @@ echo "Generating ~/.npmrc"
 while IFS= read -r registry_src; do
     [ -z "$registry_src" ] && continue
     echo "$registry_src" >> ~/.npmrc
-done <<'EOF'
+done <<EOF
 ${SCOPES_WITH_REGISTERS}
 EOF
 
