@@ -20,6 +20,12 @@ on:
         default: ""
         description: Тег, указываемый при ручной пересборке
 
+      npm-tag:
+        required: false
+        type: string
+        default: replay
+        description: Имя npm тега. Если не указать, то добавится тег :latest, что нежелательно при повторной публикации
+
       node-version:
         required: false
         type: string
@@ -101,7 +107,14 @@ jobs:
         shell: bash
         run: npm run build
 
-      - name: Publish to Github Registry
+      - name: Publish to Github Registry with current Tag
+        if: inputs.mode == 'release'
         run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.node-auth-token }}
+
+      - name: Publish to Github Registry with specified Tag
+        if: inputs.mode == 'release'
+        run: npm publish --tag "${{ inputs.npm-tag }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.node-auth-token }}
