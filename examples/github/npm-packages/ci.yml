@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Continuous Integration
+description: >
+  Workflow для push в feature-ветки (быстрый CI) и master.
+  При push в master сохраняет dist/ как артефакт
+
+on:
+  push:
+    branches: ["**"]
+
+jobs:
+  ci:
+    uses: nii-energomash/automation/.github/workflows/npm-ci.yml@master
+    with:
+      node-version: "20"
+      publish-artifact: ${{ github.ref == 'refs/heads/master' }}
+    secrets:
+      node-auth-token: ${{ secrets.GITHUB_TOKEN }}

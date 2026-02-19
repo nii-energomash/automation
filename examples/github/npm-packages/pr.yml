@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Pull Request
+description: >
+  Workflow для pull-requests.
+
+  Важно:
+
+  в Github Actions такой запрос подразумевает работу с недоверенным источником.
+  Затруднена работа с секретами и приватными репозиториями пакетов
+  при наличии зависимостей, опубликованных в приватный репозиторий пакетов.
+  Полноценный workflow можно использовать в локальной сети с публичными
+  (в рамках локальной сети) пакетами.
+
+  Этот пакет не содержит приватных зависимостей.
+  Однако нужно обратить внимание, что при добавлении таких зависимостей
+  этот workflow не будет корректно работать.
+  В такой ситуации вероятна ошибка:
+
+  npm error 401 Unauthorized - ... - unauthenticated: User cannot be authenticated with the token provided.
+
+on:
+  pull_request:
+
+jobs:
+  ci:
+    uses: nii-energomash/automation/.github/workflows/npm-ci.yml@master
+    with:
+      node-version: "20"
+      publish-artifact: false
+    secrets:
+      node-auth-token: ${{ secrets.GITHUB_TOKEN }}

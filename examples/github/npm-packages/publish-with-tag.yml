@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Publish NPM Package with Tag (release on Tag trigger)
+description: >
+  Сборка и публикация NPM-пакета с указанием версии
+  (при добавлении git-тега в master-ветку)
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+jobs:
+  publish:
+    uses: nii-energomash/automation/.github/workflows/npm-package-publish.yml@master
+    with:
+      mode: release
+      node-version: '20'
+      npm-scopes-with-registers: |
+        @andrey-aka-skif:registry=https://npm.pkg.github.com
+    secrets:
+      node-auth-token: ${{ secrets.PACKAGE_PUBLISH_TOKEN }}
