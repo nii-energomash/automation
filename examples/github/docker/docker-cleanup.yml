@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Cleanup Docker images with technical tags
+description: >
+  Удаление docker-образов по расписанию или вручную.
+  Будут удалены образы, теги которых начинаются с 'sha-',
+  и которые старше указанного возраста
+
+on:
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+    inputs:
+      days-old:
+        required: false
+        type: string
+        default: "0"
+        description: "Удалить образы старше чем D дней"
+
+      hours-old:
+        required: false
+        type: string
+        default: "1"
+        description: "Удалить образы старше чем D дней и H часов (0–23)"
+
+      show-only:
+        required: false
+        default: false
+        type: boolean
+        description: "Только показать список (не удалять)"
+
+permissions:
+  packages: write
+  contents: read
+
+jobs:
+  cleanup:
+    uses: nii-energomash/automation/.github/workflows/docker-cleanup.yml@master
+    with:
+      days-old: ${{ inputs.days-old }}
+      hours-old: ${{ inputs.hours-old }}
+      show-only: ${{ inputs.show-only }}

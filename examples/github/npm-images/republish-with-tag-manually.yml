@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Republish Docker Image with Tag (re-release manually)
+description: >
+  Сборка и повторная публикация docker образа с указанным git-тегом вида 'v*.*.*'.
+  Запускать вручную через UI
+
+on:
+  workflow_dispatch:
+    inputs:
+      git-tag:
+        required: true
+        type: string
+        description: Имя git-тега для повторной публикации (например, v1.2.3)
+
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  docker:
+    uses: nii-energomash/automation/.github/workflows/npm-docker-publish.yml@master
+    with:
+      mode: rebuild
+      tag: ${{ inputs.git-tag }}
+      registry: ghcr.io
+      image-name: ${{ github.repository }}
+      node-version: '20'
+      npm-scopes-with-registers: |
+        @andrey-aka-skif:registry=https://npm.pkg.github.com
+        @nii-energomash:registry=https://npm.pkg.github.com
+    secrets:
+      node-auth-token: ${{ secrets.PACKAGE_PUBLISH_TOKEN }}
+      docker-auth-token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Publish Docker Image with Tag (release on Tag trigger)
+description: >
+  Сборка и публикация docker образа с указанием версии
+  (при добавлении git-тега в master-ветку)
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  docker:
+    uses: nii-energomash/automation/.github/workflows/npm-docker-publish.yml@master
+    with:
+      mode: release
+      registry: ghcr.io
+      image-name: ${{ github.repository }}
+      node-version: '20'
+      npm-scopes-with-registers: |
+        @andrey-aka-skif:registry=https://npm.pkg.github.com
+        @nii-energomash:registry=https://npm.pkg.github.com
+    secrets:
+      node-auth-token: ${{ secrets.PACKAGE_PUBLISH_TOKEN }}
+      docker-auth-token: ${{ secrets.GITHUB_TOKEN }}
