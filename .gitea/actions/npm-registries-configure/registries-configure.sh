@@ -33,7 +33,7 @@ else
     echo "🔓 NODE_AUTH_TOKEN не задан, строка с токеном не добавлена"
 fi
 
-echo "strict-ssl=false"
+echo "strict-ssl=false" >> ~/.npmrc
 
 echo ""
 echo "📄 Содержимое ~/.npmrc:"
