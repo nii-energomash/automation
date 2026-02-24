@@ -18,4 +18,4 @@ jobs:
       npm-scopes-with-registers: |
         @andrey-aka-skif:registry=https://npm.pkg.github.com
     secrets:
-      node-auth-token: ${{ secrets.PACKAGE_PUBLISH_TOKEN }}
+      node-auth-token: ${{ secrets.PACKAGES_PUBLISH_TOKEN }}
