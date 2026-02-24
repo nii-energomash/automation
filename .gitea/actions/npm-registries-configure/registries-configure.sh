@@ -16,7 +16,7 @@ while IFS= read -r registry_src; do
 
         registry_no_proto="${registry_url#http://}"
         registry_no_proto="${registry_no_proto#https://}"
-        registry_no_proto="${registry_no_proto%/}"
+        # registry_no_proto="${registry_no_proto%/}"
 
         REGISTRIES["$registry_no_proto"]=1
     fi
