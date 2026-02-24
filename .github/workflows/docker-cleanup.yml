@@ -38,6 +38,6 @@ jobs:
       - name: 🧹 Cleanup Docker images
         uses: nii-energomash/automation/.github/actions/docker-cleanup@master
         with:
-          days-old: ${{ inputs.days-old }}
-          hours-old: ${{ inputs.hours-old }}
-          show-only: ${{ inputs.show-only }}
+          days-old: ${{ inputs.days-old || '0' }}
+          hours-old: ${{ inputs.hours-old || '1' }}
+          show-only: ${{ inputs.show-only || false }}
