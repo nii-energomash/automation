@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: (reusable) NPM CI for github mirror
+description: >
+  Переиспользуемый workflow, описывающий Continuous Integration для NPM-проектов.
+  Этот workflow подразумевает, что проект может быть собран с использованием
+  ТОЛЬКО зеркальных npm-пакетов из реестра Gitea.
+  Он намеренно отличается от поведения GitHub CI.
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+        default: ""
+        description: Указатель на коммит (используется при сборке по тегу)
+
+      node-version:
+        required: false
+        type: string
+        default: "20"
+        description: Версия Node.js
+
+      npm-scopes-with-registers:
+        type: string
+        required: false
+        default: ""
+        description: >
+          Массив строк, разделенный переносом строки, и содержащий scope и адрес регистра в формате
+          @\<scope\>:registry=\<uri\>. Например: @username:registry=https://192.168.100.252:3000/api/packages/username/npm/
+
+jobs:
+  reusable-ci:
+    runs-on: ubuntu-latest
+    container:
+      image: node:20-bullseye
+
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: 🛒 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.ref != '' && inputs.ref || github.ref }}
+
+      - name: ✨ Setup Node.js (version ${{ inputs.node-version }})
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+
+      - name: 📝 Configure npm registries
+        uses: https://192.168.100.252:3000/usov-andrey/automation/.github/actions/npm-registries-configure@master
+        with:
+          npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
+
+      # ПРИМЕЧАНИЕ:
+      # Файл package-lock.json удаляется намеренно.
+      # Lock-файл содержит URL-адреса пакетов GitHub и не должен использоваться в Gitea CI,
+      # т.к. приватные пакеты должны быть взяты из репозитория пакетов Gitea.
+      # При этом изменения в lock-файле не должны коммититься в репозиторий.
+      # В противном случае зеркало станет форком.
+      - name: 📦 Install dependencies (NO LOCK - Gitea reference build)
+        run: |
+          echo "⚠️  Удаляем package-lock.json"
+          rm -f package-lock.json
+
+          echo "⚠️  Reference build: npm install без использования package-lock.json"
+          npm install --no-fund
+
+      - name: 📝 Lint
+        shell: bash
+        run: npm run lint
+
+      - name: 🧪 Tests
+        shell: bash
+        run: npm test
+
+      - name: 🛠️ Build
+        shell: bash
+        run: npm run build
