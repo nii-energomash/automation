@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Pull Request
+description: >
+  Workflow для pull-requests
+
+on:
+  pull_request:
+
+jobs:
+  ci:
+    uses: https://192.168.100.252:3000/usov-andrey/automation/.gitea/workflows/npm-ci.yml@master
+    with:
+      node-version: "20"
+    secrets:
+      node-auth-token: ${{ secrets.PACKAGES_READ_TOKEN }}
