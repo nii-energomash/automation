@@ -1,12 +1,12 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 
-name: Resolve tag to ref (НЕ НУЖЕН?)
+name: Resolve tag to ref
 description: Получение git-ref по переданному git-тегу (используется при ручной публикации по тегу)
 
 inputs:
   tag:
     required: true
-    description: Тег в фомате v*.*.*
+    description: Тег в формате v*.*.*
 
 outputs:
   ref:
@@ -16,11 +16,6 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: 🔍 Validate tag format
-      uses: ./.github/actions/validate-tag-format
-      with:
-        tag: ${{ inputs.tag }}
-
     - name: ➡️ Resolve tag to ref
       id: resolve
       shell: bash
@@ -33,6 +28,17 @@ runs:
 
         TAG="$INPUT_TAG"
         echo "🔎 Input tag: $TAG"
+
+        # Проверка намеренно дублирует действие validate-tag-format.
+        # Вызвать его отсюда нечем: относительный путь './' внутри composite
+        # action резолвится в рабочем каталоге потребителя, а ссылка на
+        # собственный репозиторий '$/' недоступна вне github.com — каталог
+        # .github/actions подключается и с раннера Gitea.
+        if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "❌ Invalid tag format: $TAG"
+          echo "Expected: vMAJOR.MINOR.PATCH (e.g. v1.2.3)"
+          exit 1
+        fi
 
         REF="refs/tags/$TAG"
 
