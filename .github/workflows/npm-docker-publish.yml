@@ -76,7 +76,7 @@ jobs:
           image-name: ${{ inputs.image-name }}
 
       - name: 🛒 Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           ref: ${{ steps.ctx.outputs.ref }}
@@ -95,9 +95,13 @@ jobs:
           ref: ${{ steps.ctx.outputs.ref }}
 
       - name: ✨ Setup Node.js (version ${{ inputs.node-version }})
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
+          # setup-node начиная с v5 сам включает кеш npm, если в package.json
+          # есть поле packageManager. В публикации кеша не было — это лишняя
+          # переменная в шаге, от которого зависит содержимое образа.
+          package-manager-cache: false
 
       - name: 📝 Configure NPM registries
         uses: nii-energomash/automation/.github/actions/npm-registries-configure@master
@@ -127,14 +131,14 @@ jobs:
         run: npm run build
 
       - name: 🔐 Log in to container registry (${{ inputs.registry }})
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ inputs.registry }}
           username: ${{ github.actor }}
           password: ${{ secrets.docker-auth-token }}
 
       - name: 🐳 Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
