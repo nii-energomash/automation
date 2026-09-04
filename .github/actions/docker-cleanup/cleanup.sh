@@ -15,6 +15,7 @@ set -euo pipefail
 DAYS_OLD="${DAYS_OLD:-0}"
 HOURS_OLD="${HOURS_OLD:-1}"
 SHOW_ONLY="${SHOW_ONLY:-false}"
+TAG_PREFIX="sha-"
 
 #######################################
 # Derived values
@@ -43,14 +44,38 @@ if [[ "$SHOW_ONLY" != "true" && "$SHOW_ONLY" != "false" ]]; then
 fi
 
 #######################################
+# Package endpoint
+#######################################
+
+# Путь до пакета зависит от того, кому он принадлежит: у организации это
+# /orgs/{org}/packages/..., у пользователя — /users/{username}/packages/...
+# Перепутанный путь даёт 404, поэтому тип владельца выясняется в рантайме,
+# а не зашивается в скрипт.
+OWNER_TYPE="$(gh api "users/${OWNER}" --jq '.type' 2>/dev/null || true)"
+
+case "$OWNER_TYPE" in
+  Organization) OWNER_PATH="orgs/${OWNER}" ;;
+  User) OWNER_PATH="users/${OWNER}" ;;
+  *)
+    echo "❌ Не удалось определить тип владельца '${OWNER}'"
+    echo "   Получено: '${OWNER_TYPE:-<пусто>}', ожидалось 'Organization' или 'User'"
+    exit 1
+    ;;
+esac
+
+PACKAGE_PATH="${OWNER_PATH}/packages/container/${REPO}"
+
+#######################################
 # Time calculation
 #######################################
 
 CUTOFF_TS="$(date -d "${DAYS_OLD} days ${HOURS_OLD} hours ago" +%s)"
 
 echo "🧹 Docker cleanup"
-echo "Owner:        $OWNER"
+echo "Owner:        $OWNER ($OWNER_TYPE)"
 echo "Repository:   $REPO"
+echo "Package path: $PACKAGE_PATH"
+echo "Tag prefix:   $TAG_PREFIX"
 echo "Days old:     $DAYS_OLD"
 echo "Hours old:    $HOURS_OLD"
 echo "Show only:    $SHOW_ONLY"
@@ -58,25 +83,43 @@ echo "Cutoff time:  $(date -d "@$CUTOFF_TS")"
 echo
 
 #######################################
-# Fetch & process package versions
+# Fetch package versions
 #######################################
 
 echo "📦 Fetching container versions…"
 
-gh api \
-  "/users/${OWNER}/packages/container/${REPO}/versions" \
-  --paginate \
-  -q "
-    .[] |
-    select(.metadata.container.tags[]? | startswith(\"sha-\")) |
-    select((.updated_at | fromdateiso8601) < ${CUTOFF_TS}) |
-    {
+# any(...) вместо tags[]?: с генератором внутри select версия попадала
+# в выборку столько раз, сколько у неё подходящих тегов, и один и тот же
+# id удалялся дважды.
+JQ_FILTER="
+  .[]
+  | select(any(.metadata.container.tags[]?; startswith(\"${TAG_PREFIX}\")))
+  | select((.updated_at | fromdateiso8601) < ${CUTOFF_TS})
+  | {
       id: .id,
       updated_at: .updated_at,
       tags: .metadata.container.tags
     }
-  " |
-while read -r version; do
+"
+
+if ! CANDIDATES="$(gh api "${PACKAGE_PATH}/versions" --paginate --jq "$JQ_FILTER")"; then
+  echo "❌ Не удалось получить список версий пакета по пути ${PACKAGE_PATH}"
+  exit 1
+fi
+
+#######################################
+# Process candidates
+#######################################
+
+FOUND=0
+DELETED=0
+SKIPPED=0
+
+while IFS= read -r version; do
+  [ -z "$version" ] && continue
+
+  FOUND=$((FOUND + 1))
+
   ID="$(jq -r '.id' <<<"$version")"
   TAGS="$(jq -r '.tags | join(", ")' <<<"$version")"
   UPDATED="$(jq -r '.updated_at' <<<"$version")"
@@ -88,12 +131,37 @@ while read -r version; do
 
   if [[ "$SHOW_ONLY" == "true" ]]; then
     echo "    (dry-run, not deleting)"
+    echo
+    continue
+  fi
+
+  echo "    Deleting version $ID"
+
+  # Версию мог удалить параллельный прогон, поэтому 404 — не ошибка.
+  if DELETE_OUTPUT="$(gh api --method DELETE "${PACKAGE_PATH}/versions/${ID}" --silent </dev/null 2>&1)"; then
+    DELETED=$((DELETED + 1))
+  elif grep -q "HTTP 404" <<<"$DELETE_OUTPUT"; then
+    echo "    ⏭️  Версия уже отсутствует (404)"
+    SKIPPED=$((SKIPPED + 1))
   else
-    echo "    Deleting version $ID"
-    gh api \
-      --method DELETE \
-      "/users/${OWNER}/packages/container/${REPO}/versions/${ID}"
+    echo "    ❌ Не удалось удалить версию $ID"
+    echo "$DELETE_OUTPUT"
+    exit 1
   fi
 
   echo
-done
+done <<<"$CANDIDATES"
+
+#######################################
+# Summary
+#######################################
+
+echo "✅ Готово"
+echo "   Кандидатов найдено: $FOUND"
+
+if [[ "$SHOW_ONLY" == "true" ]]; then
+  echo "   Удалено:            0 (dry-run)"
+else
+  echo "   Удалено:            $DELETED"
+  echo "   Пропущено (404):    $SKIPPED"
+fi
