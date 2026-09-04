@@ -62,7 +62,7 @@ jobs:
           cache: npm
 
       - name: 📝 Configure npm registries
-        uses: https://192.168.100.252:3000/usov-andrey/automation/.github/actions/npm-registries-configure@master
+        uses: https://192.168.100.252:3000/usov-andrey/automation/.gitea/actions/npm-registries-configure@master
         with:
           npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
           node-auth-token: ${{ secrets.node-auth-token }}
