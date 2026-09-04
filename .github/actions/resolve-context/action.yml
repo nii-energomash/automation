@@ -53,33 +53,49 @@ runs:
     - name: 🔍 Resolve context
       id: resolve
       shell: bash
+      # Значения приходят переменными окружения, а не подстановкой в текст
+      # скрипта: подставленное значение стало бы частью кода.
+      env:
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_TAG: ${{ inputs.tag }}
+        INPUT_REGISTRY: ${{ inputs.registry }}
+        INPUT_IMAGE_NAME: ${{ inputs.image-name }}
+        COMMIT_SHA: ${{ github.sha }}
       run: |
         set -euo pipefail
 
-        REPO="${{ inputs.registry }}/${{ inputs.image-name }}"
-        MODE="${{ inputs.mode }}"
+        # Перенос строки в значении добавил бы в $GITHUB_OUTPUT лишнюю
+        # строку 'имя=значение', то есть подменил бы произвольный выход шага.
+        set_output() {
+          if [[ "$2" == *$'\n'* ]]; then
+            echo "❌ Значение '$1' содержит перенос строки"
+            exit 1
+          fi
+          printf '%s=%s\n' "$1" "$2" >>"$GITHUB_OUTPUT"
+        }
 
-        if [[ "$MODE" == "feature" ]]; then
-          COMMIT_HASH="${{ github.sha }}"
+        REPO="${INPUT_REGISTRY}/${INPUT_IMAGE_NAME}"
+
+        if [[ "$INPUT_MODE" == "feature" ]]; then
           REF="${GITHUB_REF}"
-          TAG="sha-$COMMIT_HASH"
+          TAG="sha-${COMMIT_SHA}"
           VERSION=""
           IMAGE_REFERENCES="$REPO:$TAG"
 
-        elif [[ "$MODE" == "release" ]]; then
+        elif [[ "$INPUT_MODE" == "release" ]]; then
           REF="${GITHUB_REF}"
           TAG="${GITHUB_REF#refs/tags/}"
           VERSION="${GITHUB_REF#refs/tags/v}"
           IMAGE_REFERENCES="$REPO:$TAG,$REPO:latest"
 
-        elif [[ "$MODE" == "rebuild" ]]; then
-          REF="refs/tags/${{ inputs.tag }}"
-          TAG="${{ inputs.tag }}"
+        elif [[ "$INPUT_MODE" == "rebuild" ]]; then
+          REF="refs/tags/${INPUT_TAG}"
+          TAG="${INPUT_TAG}"
           VERSION="${TAG#v}"
           IMAGE_REFERENCES="$REPO:$TAG"
 
         else
-          echo "❌ Неизвестный режим mode: $MODE"
+          echo "❌ Неизвестный режим mode: $INPUT_MODE"
           exit 1
         fi
 
@@ -90,7 +106,7 @@ runs:
         echo "  image-references:"
         echo "$IMAGE_REFERENCES" | tr ',' '\n' | sed 's/^/    - /'
 
-        echo "ref=$REF" >> $GITHUB_OUTPUT
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "tag=$TAG" >> $GITHUB_OUTPUT
-        echo "image-references=$IMAGE_REFERENCES" >> $GITHUB_OUTPUT
+        set_output ref "$REF"
+        set_output version "$VERSION"
+        set_output tag "$TAG"
+        set_output image-references "$IMAGE_REFERENCES"

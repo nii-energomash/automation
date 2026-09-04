@@ -13,10 +13,14 @@ runs:
   steps:
     - name: 🔍 Validate git-tag
       shell: bash
+      # Значение приходит переменной окружения, а не подстановкой в текст
+      # скрипта: подставленное значение стало бы частью кода.
+      env:
+        INPUT_TAG: ${{ inputs.tag }}
       run: |
         set -euo pipefail
 
-        TAG="${{ inputs.tag }}"
+        TAG="$INPUT_TAG"
 
         echo "🔎 Input tag: $TAG"
 

@@ -19,10 +19,15 @@ runs:
     - name: 🏷️ Resolve tag from ref
       id: resolve
       shell: bash
+      # Значения приходят переменными окружения, а не подстановкой в текст
+      # скрипта: подставленное значение стало бы частью кода.
+      env:
+        INPUT_REF: ${{ inputs.ref }}
+        DEFAULT_REF: ${{ github.ref }}
       run: |
         set -euo pipefail
 
-        REF="${{ inputs.ref != '' && inputs.ref || github.ref }}"
+        REF="${INPUT_REF:-$DEFAULT_REF}"
 
         if [ -z "${REF}" ]; then
           echo "❌ Ошибка: ref не определён"
@@ -36,5 +41,12 @@ runs:
           exit 1
         fi
 
-        echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+        # Перенос строки в значении добавил бы в $GITHUB_OUTPUT лишнюю
+        # строку 'имя=значение', то есть подменил бы произвольный выход шага.
+        if [[ "$TAG" == *$'\n'* ]]; then
+          echo "❌ Значение тега содержит перенос строки"
+          exit 1
+        fi
+
+        printf 'tag=%s\n' "$TAG" >>"$GITHUB_OUTPUT"
         echo "📌 Тег из ref: ${TAG}"

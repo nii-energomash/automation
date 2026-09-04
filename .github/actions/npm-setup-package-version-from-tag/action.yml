@@ -23,8 +23,14 @@ runs:
       id: version-tag
       shell: bash
       if: inputs.tag != ''
+      # Значение приходит переменной окружения, а не подстановкой в текст
+      # скрипта: подставленное значение стало бы частью кода.
+      env:
+        INPUT_TAG: ${{ inputs.tag }}
       run: |
-        VERSION="${{ inputs.tag }}"
+        set -euo pipefail
+
+        VERSION="$INPUT_TAG"
         VERSION="${VERSION#v}"
 
         npm version "$VERSION" \
@@ -32,13 +38,15 @@ runs:
           --allow-same-version
 
         echo "📌 Установлена версия npm пакета из git-тега: ${VERSION}"
-        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        printf 'version=%s\n' "$VERSION" >>"$GITHUB_OUTPUT"
 
     - name: Set package version from commit hash
       id: version-hash
       shell: bash
       if: inputs.tag == ''
       run: |
+        set -euo pipefail
+
         EMPTY_VERSION="0.0.0"
         HASH=$(git rev-parse --short HEAD)
 
@@ -49,12 +57,19 @@ runs:
           --allow-same-version
 
         echo "📌 Установлена версия npm пакета из hash коммита: ${VERSION}"
-        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        printf 'version=%s\n' "$VERSION" >>"$GITHUB_OUTPUT"
 
     - name: Output final version
       id: version-final
       shell: bash
+      # Значения приходят переменными окружения, а не подстановкой в текст
+      # скрипта: подставленное значение стало бы частью кода.
+      env:
+        VERSION_FROM_TAG: ${{ steps.version-tag.outputs.version }}
+        VERSION_FROM_HASH: ${{ steps.version-hash.outputs.version }}
       run: |
-        FINAL_VERSION="${{ steps.version-tag.outputs.version || steps.version-hash.outputs.version }}"
+        set -euo pipefail
+
+        FINAL_VERSION="${VERSION_FROM_TAG:-$VERSION_FROM_HASH}"
         echo "✅ Final package version: ${FINAL_VERSION}"
-        echo "package-version=${FINAL_VERSION}" >> $GITHUB_OUTPUT
+        printf 'package-version=%s\n' "$FINAL_VERSION" >>"$GITHUB_OUTPUT"
