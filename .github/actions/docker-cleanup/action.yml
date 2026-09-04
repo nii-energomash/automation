@@ -1,10 +1,14 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 
-name: Docrer cleanup
+name: Docker cleanup
 description: >
   Удаление docker-образов.
   Будут удалены образы, теги которых начинаются с 'sha-', и которые старше указанного возраста.
-  Требуется permissions.packages.write и permissions.contents.read
+  Требуется permissions.packages.write и permissions.contents.read.
+  Путь до пакета выбирается по типу владельца репозитория: у организации это
+  /orgs/{org}/packages/..., у пользователя — /users/{username}/packages/...
+  github.token удаляет версии только у пакета, привязанного к репозиторию;
+  для пакета без такой привязки нужен PAT с правом delete:packages
 
 inputs:
   days-old:
