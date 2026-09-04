@@ -22,6 +22,24 @@ on:
         default: "20"
         description: Версия Node.js
 
+      lint-script:
+        required: false
+        type: string
+        default: lint
+        description: npm-скрипт проверки стиля. Пустое значение пропускает шаг
+
+      test-script:
+        required: false
+        type: string
+        default: test
+        description: npm-скрипт тестов. Пустое значение пропускает шаг
+
+      build-script:
+        required: false
+        type: string
+        default: build
+        description: npm-скрипт сборки. Пустое значение пропускает шаг
+
       npm-scopes-with-registers:
         type: string
         required: false
@@ -63,6 +81,7 @@ jobs:
         with:
           npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
           node-auth-token: ${{ secrets.node-auth-token }}
+          strict-ssl: "false"
 
       # ПРИМЕЧАНИЕ:
       # Файл package-lock.json удаляется намеренно.
@@ -78,14 +97,25 @@ jobs:
           echo "⚠️  Reference build: npm install без использования package-lock.json"
           npm install --no-fund
 
+      # Имя скрипта приходит переменной окружения, а не подстановкой в текст
+      # команды: подставленное значение стало бы частью кода.
       - name: 📝 Lint
+        if: ${{ inputs.lint-script != '' }}
         shell: bash
-        run: npm run lint
+        env:
+          NPM_SCRIPT: ${{ inputs.lint-script }}
+        run: npm run "$NPM_SCRIPT"
 
       - name: 🧪 Tests
+        if: ${{ inputs.test-script != '' }}
         shell: bash
-        run: npm test
+        env:
+          NPM_SCRIPT: ${{ inputs.test-script }}
+        run: npm run "$NPM_SCRIPT"
 
       - name: 🛠️ Build
+        if: ${{ inputs.build-script != '' }}
         shell: bash
-        run: npm run build
+        env:
+          NPM_SCRIPT: ${{ inputs.build-script }}
+        run: npm run "$NPM_SCRIPT"

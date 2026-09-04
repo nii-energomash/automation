@@ -23,6 +23,14 @@ inputs:
       Токен для аутентификации в NPM регистрах. По умолчанию используется github.token.
       Для использования PAT передайте: secrets.YOUR_TOKEN
 
+  strict-ssl:
+    type: string
+    required: false
+    default: "true"
+    description: >
+      Проверять сертификат регистра (true | false).
+      false требуется для регистров с самоподписанным сертификатом
+
 runs:
   using: composite
   steps:
@@ -34,3 +42,4 @@ runs:
       env:
         SCOPES_WITH_REGISTERS: ${{ inputs.npm-scopes-with-registers }}
         NODE_AUTH_TOKEN: ${{ inputs.node-auth-token }}
+        STRICT_SSL: ${{ inputs.strict-ssl }}

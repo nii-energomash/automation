@@ -3,7 +3,8 @@
 name: (reusable) Docker cleanup images with technical tags
 description: >
   Переиспользуемый workflow, описывающий удаление docker-образов.
-  Будут удалены образы, теги которых начинаются с 'sha-', и которые старше указанного возраста
+  Будут удалены образы, теги которых начинаются с заданного префикса (по умолчанию 'sha-'),
+  и которые старше указанного возраста
 
 on:
   workflow_call:
@@ -30,6 +31,20 @@ on:
         default: "false"
         description: Только показать список (не удалять)
 
+      technical-tag-prefix:
+        required: false
+        type: string
+        default: sha-
+        description: Префикс технических тегов, по которому отбираются образы
+
+      image-name:
+        required: false
+        type: string
+        default: ""
+        description: >
+          Имя образа — то же, под которым образ публикуется.
+          По умолчанию имя репозитория
+
 jobs:
   cleanup:
     runs-on: ubuntu-latest
@@ -47,3 +62,5 @@ jobs:
           days-old: ${{ inputs.days-old || '0' }}
           hours-old: ${{ inputs.hours-old || '1' }}
           show-only: ${{ inputs.show-only || 'false' }}
+          technical-tag-prefix: ${{ inputs.technical-tag-prefix || 'sha-' }}
+          image-name: ${{ inputs.image-name || github.repository }}

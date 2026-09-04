@@ -11,7 +11,43 @@ on:
         required: false
         type: boolean
         default: false
-        description: Сохранять dist/ как артефакт
+        description: Сохранять результат сборки как артефакт
+
+      artifact-name:
+        required: false
+        type: string
+        default: build
+        description: Имя артефакта
+
+      artifact-path:
+        required: false
+        type: string
+        default: dist/
+        description: Что сохранять в артефакт
+
+      artifact-retention-days:
+        required: false
+        type: string
+        default: "1"
+        description: Сколько дней хранить артефакт
+
+      lint-script:
+        required: false
+        type: string
+        default: lint
+        description: npm-скрипт проверки стиля. Пустое значение пропускает шаг
+
+      test-script:
+        required: false
+        type: string
+        default: test
+        description: npm-скрипт тестов. Пустое значение пропускает шаг
+
+      build-script:
+        required: false
+        type: string
+        default: build
+        description: npm-скрипт сборки. Пустое значение пропускает шаг
 
       ref:
         required: false
@@ -75,22 +111,33 @@ jobs:
         shell: bash
         run: npm ci --no-fund
 
+      # Имя скрипта приходит переменной окружения, а не подстановкой в текст
+      # команды: подставленное значение стало бы частью кода.
       - name: 📝 Lint
+        if: ${{ inputs.lint-script != '' }}
         shell: bash
-        run: npm run lint
+        env:
+          NPM_SCRIPT: ${{ inputs.lint-script }}
+        run: npm run "$NPM_SCRIPT"
 
       - name: 🧪 Tests
+        if: ${{ inputs.test-script != '' }}
         shell: bash
-        run: npm test
+        env:
+          NPM_SCRIPT: ${{ inputs.test-script }}
+        run: npm run "$NPM_SCRIPT"
 
       - name: 🛠️ Build
+        if: ${{ inputs.build-script != '' }}
         shell: bash
-        run: npm run build
+        env:
+          NPM_SCRIPT: ${{ inputs.build-script }}
+        run: npm run "$NPM_SCRIPT"
 
       - name: 📦 Upload artifact
         if: ${{ inputs.publish-artifact }}
         uses: actions/upload-artifact@v7
         with:
-          name: build
-          path: dist/
-          retention-days: 1
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.artifact-path }}
+          retention-days: ${{ inputs.artifact-retention-days }}
