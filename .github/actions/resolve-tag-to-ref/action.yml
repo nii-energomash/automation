@@ -24,10 +24,14 @@ runs:
     - name: ➡️ Resolve tag to ref
       id: resolve
       shell: bash
+      # Значение приходит переменной окружения, а не подстановкой в текст
+      # скрипта: подставленное значение стало бы частью кода.
+      env:
+        INPUT_TAG: ${{ inputs.tag }}
       run: |
         set -euo pipefail
 
-        TAG="${{ inputs.tag }}"
+        TAG="$INPUT_TAG"
         echo "🔎 Input tag: $TAG"
 
         REF="refs/tags/$TAG"
@@ -42,5 +46,12 @@ runs:
           exit 1
         fi
 
-        echo "ref=${REF}" >> $GITHUB_OUTPUT
+        # Перенос строки в значении добавил бы в $GITHUB_OUTPUT лишнюю
+        # строку 'имя=значение', то есть подменил бы произвольный выход шага.
+        if [[ "$REF" == *$'\n'* ]]; then
+          echo "❌ Значение ref содержит перенос строки"
+          exit 1
+        fi
+
+        printf 'ref=%s\n' "$REF" >>"$GITHUB_OUTPUT"
         echo "📌 Full ref: $REF"

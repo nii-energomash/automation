@@ -13,10 +13,14 @@ runs:
   steps:
     - name: 🔍 Validate ref on master
       shell: bash
+      # Значение приходит переменной окружения, а не подстановкой в текст
+      # скрипта: подставленное значение стало бы частью кода.
+      env:
+        INPUT_REF: ${{ inputs.ref }}
       run: |
         set -euo pipefail
 
-        REF="${{ inputs.ref }}"
+        REF="$INPUT_REF"
         echo "🔎 Checking ref: $REF"
 
         if ! REF_COMMIT="$(git rev-parse "$REF" 2>/dev/null)"; then
