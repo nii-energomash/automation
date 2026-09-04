@@ -37,6 +37,9 @@ jobs:
   cleanup:
     uses: nii-energomash/automation/.github/workflows/docker-cleanup.yml@master
     with:
-      days-old: ${{ inputs.days-old }}
-      hours-old: ${{ inputs.hours-old }}
-      show-only: ${{ inputs.show-only }}
+      # При триггере schedule контекст inputs пуст и каждое выражение даёт ''.
+      # Переиспользуемый workflow ждёт строки, поэтому show-only приводится
+      # к 'true'/'false' явно, а не пробрасывается булевым значением.
+      days-old: ${{ inputs.days-old || '0' }}
+      hours-old: ${{ inputs.hours-old || '1' }}
+      show-only: ${{ inputs.show-only && 'true' || 'false' }}
