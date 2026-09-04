@@ -15,18 +15,34 @@ set -euo pipefail
 DAYS_OLD="${DAYS_OLD:-0}"
 HOURS_OLD="${HOURS_OLD:-1}"
 SHOW_ONLY="${SHOW_ONLY:-false}"
-TAG_PREFIX="sha-"
+TAG_PREFIX="${TAG_PREFIX:-sha-}"
+IMAGE_NAME="${IMAGE_NAME:-$GITHUB_REPOSITORY}"
 
 #######################################
 # Derived values
 #######################################
 
 OWNER="$GITHUB_REPOSITORY_OWNER"
-REPO="${GITHUB_REPOSITORY#*/}"
+
+# Имя образа задаётся так же, как при публикации, то есть вместе с владельцем
+# (owner/name). В API пакетов владелец идёт отдельным сегментом пути, поэтому
+# префикс отрезается, а оставшиеся '/' кодируются: имя пакета — один сегмент.
+PACKAGE_NAME="${IMAGE_NAME#"${OWNER}/"}"
+PACKAGE_NAME="${PACKAGE_NAME//\//%2F}"
 
 #######################################
 # Validation
 #######################################
+
+if [[ -z "$PACKAGE_NAME" ]]; then
+  echo "❌ IMAGE_NAME не задаёт имя пакета: '${IMAGE_NAME}'"
+  exit 1
+fi
+
+if ! [[ "$TAG_PREFIX" =~ ^[A-Za-z0-9._-]+$ ]]; then
+  echo "❌ TAG_PREFIX must contain only [A-Za-z0-9._-]"
+  exit 1
+fi
 
 if ! [[ "$DAYS_OLD" =~ ^[0-9]+$ ]]; then
   echo "❌ DAYS_OLD must be a non-negative integer"
@@ -63,7 +79,7 @@ case "$OWNER_TYPE" in
     ;;
 esac
 
-PACKAGE_PATH="${OWNER_PATH}/packages/container/${REPO}"
+PACKAGE_PATH="${OWNER_PATH}/packages/container/${PACKAGE_NAME}"
 
 #######################################
 # Time calculation
@@ -73,7 +89,7 @@ CUTOFF_TS="$(date -d "${DAYS_OLD} days ${HOURS_OLD} hours ago" +%s)"
 
 echo "🧹 Docker cleanup"
 echo "Owner:        $OWNER ($OWNER_TYPE)"
-echo "Repository:   $REPO"
+echo "Image name:   $IMAGE_NAME"
 echo "Package path: $PACKAGE_PATH"
 echo "Tag prefix:   $TAG_PREFIX"
 echo "Days old:     $DAYS_OLD"

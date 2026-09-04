@@ -3,7 +3,8 @@
 name: Docker cleanup
 description: >
   Удаление docker-образов.
-  Будут удалены образы, теги которых начинаются с 'sha-', и которые старше указанного возраста.
+  Будут удалены образы, теги которых начинаются с заданного префикса (по умолчанию 'sha-'),
+  и которые старше указанного возраста.
   Требуется permissions.packages.write и permissions.contents.read.
   Путь до пакета выбирается по типу владельца репозитория: у организации это
   /orgs/{org}/packages/..., у пользователя — /users/{username}/packages/...
@@ -26,6 +27,16 @@ inputs:
     default: false
     type: boolean
     description: "Только показать список (не удалять)"
+  technical-tag-prefix:
+    required: false
+    type: string
+    default: sha-
+    description: "Префикс технических тегов, по которому отбираются образы"
+  image-name:
+    required: false
+    type: string
+    default: ${{ github.repository }}
+    description: "Имя образа — то же, под которым образ публикуется"
 
 runs:
   using: composite
@@ -38,4 +49,6 @@ runs:
         DAYS_OLD: ${{ inputs.days-old }}
         HOURS_OLD: ${{ inputs.hours-old }}
         SHOW_ONLY: ${{ inputs.show-only }}
+        TAG_PREFIX: ${{ inputs.technical-tag-prefix }}
+        IMAGE_NAME: ${{ inputs.image-name }}
         GH_TOKEN: ${{ github.token }}

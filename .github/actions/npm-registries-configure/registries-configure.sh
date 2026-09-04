@@ -2,6 +2,12 @@
 set -euo pipefail
 
 NPMRC="${HOME}/.npmrc"
+STRICT_SSL="${STRICT_SSL:-true}"
+
+if [ "$STRICT_SSL" != "true" ] && [ "$STRICT_SSL" != "false" ]; then
+    echo "❌ STRICT_SSL must be 'true' or 'false'"
+    exit 1
+fi
 
 echo "Generating ${NPMRC}"
 : >"$NPMRC"
@@ -49,6 +55,8 @@ else
     done
     echo "🔑 NPM токен добавлен для ${#REGISTRIES[@]} registry"
 fi
+
+echo "strict-ssl=${STRICT_SSL}" >>"$NPMRC"
 
 echo "📝 Конфигурация NPM сохранена в ${NPMRC}"
 

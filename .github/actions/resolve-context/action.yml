@@ -28,6 +28,12 @@ inputs:
     default: ${{ github.repository }}
     description: Имя образа
 
+  technical-tag-prefix:
+    required: false
+    type: string
+    default: sha-
+    description: Префикс технического тега, добавляемого в режиме feature
+
 outputs:
   ref:
     value: ${{ steps.resolve.outputs.ref }}
@@ -60,6 +66,7 @@ runs:
         INPUT_TAG: ${{ inputs.tag }}
         INPUT_REGISTRY: ${{ inputs.registry }}
         INPUT_IMAGE_NAME: ${{ inputs.image-name }}
+        INPUT_TECHNICAL_TAG_PREFIX: ${{ inputs.technical-tag-prefix }}
         COMMIT_SHA: ${{ github.sha }}
       run: |
         set -euo pipefail
@@ -78,7 +85,7 @@ runs:
 
         if [[ "$INPUT_MODE" == "feature" ]]; then
           REF="${GITHUB_REF}"
-          TAG="sha-${COMMIT_SHA}"
+          TAG="${INPUT_TECHNICAL_TAG_PREFIX}${COMMIT_SHA}"
           VERSION=""
           IMAGE_REFERENCES="$REPO:$TAG"
 

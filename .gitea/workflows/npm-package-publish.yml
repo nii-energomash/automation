@@ -32,6 +32,30 @@ on:
         default: "20"
         description: Версия Node.js
 
+      base-branch:
+        required: false
+        type: string
+        default: master
+        description: Ветка, в которой должен находиться тег
+
+      lint-script:
+        required: false
+        type: string
+        default: lint
+        description: npm-скрипт проверки стиля. Пустое значение пропускает шаг
+
+      test-script:
+        required: false
+        type: string
+        default: test
+        description: npm-скрипт тестов. Пустое значение пропускает шаг
+
+      build-script:
+        required: false
+        type: string
+        default: build
+        description: npm-скрипт сборки. Пустое значение пропускает шаг
+
       npm-scopes-with-registers:
         type: string
         required: false
@@ -72,10 +96,11 @@ jobs:
         with:
           tag: ${{ steps.ctx.outputs.tag }}
 
-      - name: 🔍 Validate tag on master
+      - name: 🔍 Validate tag on base branch
         uses: https://192.168.100.252:3000/usov-andrey/automation/.github/actions/validate-ref-on-master@master
         with:
           ref: ${{ steps.ctx.outputs.ref }}
+          base-branch: ${{ inputs.base-branch }}
 
       - name: ✨ Setup Node.js (version ${{ inputs.node-version }})
         uses: actions/setup-node@v7
@@ -91,6 +116,7 @@ jobs:
         with:
           npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
           node-auth-token: ${{ secrets.node-auth-token }}
+          strict-ssl: "false"
 
       - name: 📌 Set package version from tag
         uses: https://192.168.100.252:3000/usov-andrey/automation/.github/actions/npm-setup-package-version-from-tag@master
@@ -101,17 +127,28 @@ jobs:
         shell: bash
         run: npm ci --no-fund
 
+      # Имя скрипта приходит переменной окружения, а не подстановкой в текст
+      # команды: подставленное значение стало бы частью кода.
       - name: 📝 Lint
+        if: ${{ inputs.lint-script != '' }}
         shell: bash
-        run: npm run lint
+        env:
+          NPM_SCRIPT: ${{ inputs.lint-script }}
+        run: npm run "$NPM_SCRIPT"
 
       - name: 🧪 Tests
+        if: ${{ inputs.test-script != '' }}
         shell: bash
-        run: npm test
+        env:
+          NPM_SCRIPT: ${{ inputs.test-script }}
+        run: npm run "$NPM_SCRIPT"
 
       - name: 🛠️ Build
+        if: ${{ inputs.build-script != '' }}
         shell: bash
-        run: npm run build
+        env:
+          NPM_SCRIPT: ${{ inputs.build-script }}
+        run: npm run "$NPM_SCRIPT"
 
       - name: Publish to Github Registry with current Tag
         if: inputs.mode == 'release'
