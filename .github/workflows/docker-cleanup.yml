@@ -11,19 +11,23 @@ on:
       days-old:
         required: false
         type: string
-        default: "1"
+        default: "0"
         description: Удалить образы старше чем D дней
 
       hours-old:
         required: false
         type: string
-        default: "0"
+        default: "1"
         description: Удалить образы старше чем D дней и H часов (0–23)
 
+      # Строка, а не boolean: вызывающий workflow пробрасывает сюда
+      # ${{ inputs.show-only }}, а при триггере schedule контекст inputs пуст
+      # и выражение даёт ''. В boolean-вход пустая строка не приводится —
+      # workflow не стартует вовсе.
       show-only:
         required: false
-        default: false
-        type: boolean
+        type: string
+        default: "false"
         description: Только показать список (не удалять)
 
 jobs:
@@ -38,6 +42,8 @@ jobs:
       - name: 🧹 Cleanup Docker images
         uses: nii-energomash/automation/.github/actions/docker-cleanup@master
         with:
+          # Умолчания входов тут не спасают: вызывающий workflow передаёт
+          # значение явно, и пустая строка со schedule перекрывает default.
           days-old: ${{ inputs.days-old || '0' }}
           hours-old: ${{ inputs.hours-old || '1' }}
-          show-only: ${{ inputs.show-only || false }}
+          show-only: ${{ inputs.show-only || 'false' }}
