@@ -30,6 +30,11 @@ on:
           Массив строк, разделенный переносом строки, и содержащий scope и адрес регистра в формате
           @\<scope\>:registry=\<uri\>. Например: @username:registry=https://192.168.100.252:3000/api/packages/username/npm/
 
+    secrets:
+      node-auth-token:
+        required: false
+        description: Токен для приватных NPM регистров
+
 jobs:
   reusable-ci:
     runs-on: ubuntu-latest
@@ -54,9 +59,10 @@ jobs:
           cache: npm
 
       - name: 📝 Configure npm registries
-        uses: https://192.168.100.252:3000/usov-andrey/automation/.github/actions/npm-registries-configure@master
+        uses: https://192.168.100.252:3000/usov-andrey/automation/.gitea/actions/npm-registries-configure@master
         with:
           npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
+          node-auth-token: ${{ secrets.node-auth-token }}
 
       # ПРИМЕЧАНИЕ:
       # Файл package-lock.json удаляется намеренно.
