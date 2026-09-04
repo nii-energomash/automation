@@ -1,0 +1,19 @@
+# По умолчанию: и в репозитории, и в рабочем каталоге — LF.
+# Скрипты действий исполняет Linux-раннер: файл, уехавший туда с CRLF,
+# падает на запуске сообщением `\r: not found`.
+* text=auto eol=lf
+
+# Скрипты с фиксированными окончаниями строк
+*.sh  text eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Бинарные ассеты (без EOL-нормализации и diff'а)
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.pdf  binary
