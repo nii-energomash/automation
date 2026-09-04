@@ -1,0 +1,13 @@
+# Каталоги и файлы редакторов
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+
+# Мусор ОС
+.DS_Store
+Thumbs.db
+
+# Логи
+*.log
