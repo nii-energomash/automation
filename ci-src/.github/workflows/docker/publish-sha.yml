@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+# источник: nii-energomash/automation/ci-src/.github/workflows/docker/publish-sha.yml
+# место: .github/workflows/publish-sha.yml
+
+# Технический образ на каждый коммит в master: им проверяют собранный сервис до
+# релиза. Тег один — sha-<короткий sha>, и по нему же его потом удаляет
+# автоочистка. Ни latest, ни версионного тега здесь не появляется: тем и другим
+# распоряжается релиз, и техническая сборка не должна их двигать.
+
+name: Publish sha
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+# Коммиты в master идут подряд, а нужен образ последнего: сборка предыдущего
+# отменяется, не досчитавшись. Образа отменённого коммита не останется — для
+# технического тега это приемлемо.
+concurrency:
+  group: publish-sha
+  cancel-in-progress: true
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Настройка buildx
+        uses: docker/setup-buildx-action@v4
+
+      # Встроенный токен вместо PAT: он не истекает, не требует ручного
+      # обновления и ограничен этим репозиторием. Права даёт блок permissions.
+      # Токен для восстановления пакетов — другой и уезжает не сюда, а в сборку.
+      - name: Вход в реестр
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # type=sha даёт ровно ту форму тега, по которой отбирает автоочистка.
+      # latest=false — страховка: список тегов задан явно и умолчания экшена не
+      # применяются, но цена ошибки здесь — сдвинутый latest на техническом
+      # образе.
+      #
+      # Имя репозитория может содержать заглавные буквы, а имена образов бывают
+      # только в нижнем регистре — экшен приводит их сам. На второй площадке
+      # экшена нет, и регистр приводится вручную.
+      #
+      # Метки его вывода не берутся, см. шаг сборки.
+      - name: Теги образа
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository }}
+          flavor: latest=false
+          tags: type=sha
+
+      # Восстановлению внутри сборки нужна аутентификация во внутреннем реестре
+      # зависимостей, поэтому PAT уезжает в неё секретом BuildKit, а не
+      # аргументом сборки: ARG остался бы в docker history готового образа.
+      # Проекту, чья сборка ничего оттуда не тянет, строка secrets не нужна.
+      #
+      # Про provenance: false и про явный список меток — см. release.yml.
+      - name: Сборка и публикация
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: |
+            org.opencontainers.image.title=${{ github.event.repository.name }}
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          provenance: false
+          build-args: |
+            API_VERSION=0.0.0-${{ steps.meta.outputs.version }}
+          secrets: |
+            packages_token=${{ secrets.GH_PACKAGES_TOKEN }}

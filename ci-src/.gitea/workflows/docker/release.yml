@@ -1,0 +1,138 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+# источник: nii-energomash/automation/ci-src/.gitea/workflows/docker/release.yml
+# место: .gitea/workflows/release.yml
+
+# Публикация релизного образа во встроенный реестр Gitea. Версия берётся из
+# git-тега vX.Y.Z — в исходниках её нет. Единственный триггер — publish Release:
+# тег снимает состояние, релиз объявляет его пригодным для передачи наружу,
+# поэтому голый push тега НЕ публикует. Зеркало тянет с GitHub только рефы,
+# релиз в Gitea создаётся отдельно. Упавшее задание перезапускается кнопкой
+# Re-run.
+#
+# С площадкой GitHub это описание намеренно не совпадает: там docker/*-экшены и
+# buildx как отдельный шаг, здесь прямые вызовы docker CLI. Задание работает не
+# со своим демоном, а с демоном хоста через проброшенный сокет, и контекст
+# сборки CLI передаёт ему сам — монтировать рабочее дерево не нужно. Совпадает
+# только политика тега, и она вынесена в общий экшен.
+#
+# Задание archive — упаковка выпуска для развёртывания без docker — здесь не
+# приводится: его содержимое определяется языком и способом сборки проекта.
+# Примеры для Python и .NET — в docs/docker.md.
+
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  # Версия выводится один раз и раздаётся заданиям. Два независимых вывода из
+  # одного тега — тот же класс расхождения, ради которого политика тегов вынесена
+  # в отдельный экшен.
+  version:
+    runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Шаг общий с площадкой GitHub, см. .ci/actions/version-from-tag.
+      - name: Версия из тега
+        id: version
+        uses: ./.ci/actions/version-from-tag
+        with:
+          tag: ${{ github.ref_name }}
+
+  image:
+    needs: version
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Имя образа — свойство репозитория, а не инстанса, поэтому не приходит
+      # переменной. Берётся из GITHUB_REPOSITORY, а не из полезной нагрузки
+      # события: она есть не у каждого триггера, а переменная заполнена всегда.
+      # Регистр приводится здесь — имена образов бывают только в нижнем, и на
+      # GitHub то же делает docker/metadata-action.
+      - name: Имя образа
+        env:
+          REGISTRY: ${{ vars.REGISTRY_HOST }}
+          OWNER: ${{ vars.REGISTRY_OWNER }}
+        run: |
+          NAME=$(printf '%s' "${GITHUB_REPOSITORY##*/}" | tr '[:upper:]' '[:lower:]')
+          echo "NAME=$NAME" >> "$GITHUB_ENV"
+          echo "IMAGE=$REGISTRY/$OWNER/$NAME" >> "$GITHUB_ENV"
+
+      - name: Docker CLI
+        uses: ./.gitea/actions/docker-cli
+
+      # Автоматический GITEA_TOKEN прав на запись в реестр пакетов не имеет —
+      # документация Gitea прямо предписывает обходиться личным токеном.
+      - name: Вход в реестр
+        env:
+          TOKEN: ${{ secrets.GT_PACKAGES_TOKEN }}
+          REGISTRY: ${{ vars.REGISTRY_HOST }}
+          REGISTRY_USER: ${{ vars.REGISTRY_OWNER }}
+        run: printf '%s' "$TOKEN" | docker login "$REGISTRY" -u "$REGISTRY_USER" --password-stdin
+
+      # Метки org.opencontainers.image.* проставляются аргументами: на GitHub их
+      # даёт docker/metadata-action, здесь экшена нет, а по ним из образа виден
+      # коммит, с которого он собран, — единственная связь артефакта с
+      # репозиторием.
+      #
+      # Версия уходит аргументом сборки. Ведущего v здесь нет — это версия
+      # сервиса, а не имя тега. Токен доступа к внутреннему реестру
+      # зависимостей уходит секретом BuildKit, а не аргументом сборки: ARG
+      # остался бы в docker history готового образа. Проекту, чья сборка ничего
+      # не восстанавливает из внутреннего реестра, строка --secret не нужна —
+      # вместе с ней отпадает и плагин buildx, см. .gitea/actions/docker-cli.
+      #
+      # --provenance=false — не украшательство, а условие работы автоочистки. С
+      # манифестом происхождения к тегу добавляется вторая версия, без тегов, и
+      # отличить такую от осиротевшей очистка не может.
+      - name: Сборка
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          GT_PACKAGES_TOKEN: ${{ secrets.GT_PACKAGES_TOKEN }}
+        run: |
+          docker build \
+            --build-arg "API_VERSION=$VERSION" \
+            --secret id=packages_token,env=GT_PACKAGES_TOKEN \
+            --provenance=false \
+            --label "org.opencontainers.image.title=$NAME" \
+            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --label "org.opencontainers.image.version=$VERSION" \
+            --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -t "$IMAGE:v$VERSION" \
+            -t "$IMAGE:latest" \
+            .
+
+      - name: Публикация
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          docker push "$IMAGE:v$VERSION"
+          docker push "$IMAGE:latest"
+
+      # Демон общий с хостом и переживает задание: без уборки на машине раннера
+      # копятся образы и остаётся запись о входе в реестр.
+      - name: Уборка
+        if: always()
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          REGISTRY: ${{ vars.REGISTRY_HOST }}
+        run: |
+          docker rmi "$IMAGE:v$VERSION" "$IMAGE:latest" || true
+          docker logout "$REGISTRY" || true
