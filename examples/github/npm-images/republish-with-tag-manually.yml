@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   docker:
-    uses: nii-energomash/automation/.github/workflows/npm-docker-publish.yml@master
+    uses: nii-energomash/automation/.github/workflows/npm-docker-publish.yml@v1
     with:
       mode: rebuild
       tag: ${{ inputs.git-tag }}

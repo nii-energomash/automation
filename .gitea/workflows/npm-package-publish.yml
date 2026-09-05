@@ -77,7 +77,7 @@ jobs:
 
     steps:
       - name: 🧠 Resolve build context
-        uses: https://192.168.100.252:3000/usov-andrey/automation/.github/actions/resolve-context@master
+        uses: https://192.168.100.252:3000/usov-andrey/automation/.github/actions/resolve-context@v1
         id: ctx
         with:
           mode: ${{ inputs.mode }}
@@ -92,12 +92,12 @@ jobs:
 
       - name: 🔍 Validate tag format
         if: inputs.mode == 'rebuild'
-        uses: https://192.168.100.252:3000/usov-andrey/automation/.github/actions/validate-tag-format@master
+        uses: https://192.168.100.252:3000/usov-andrey/automation/.github/actions/validate-tag-format@v1
         with:
           tag: ${{ steps.ctx.outputs.tag }}
 
       - name: 🔍 Validate tag on base branch
-        uses: https://192.168.100.252:3000/usov-andrey/automation/.github/actions/validate-ref-on-master@master
+        uses: https://192.168.100.252:3000/usov-andrey/automation/.github/actions/validate-ref-on-master@v1
         with:
           ref: ${{ steps.ctx.outputs.ref }}
           base-branch: ${{ inputs.base-branch }}
@@ -112,14 +112,14 @@ jobs:
           package-manager-cache: false
 
       - name: 📝 Configure NPM registries
-        uses: https://192.168.100.252:3000/usov-andrey/automation/.gitea/actions/npm-registries-configure@master
+        uses: https://192.168.100.252:3000/usov-andrey/automation/.gitea/actions/npm-registries-configure@v1
         with:
           npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
           node-auth-token: ${{ secrets.node-auth-token }}
           strict-ssl: "false"
 
       - name: 📌 Set package version from tag
-        uses: https://192.168.100.252:3000/usov-andrey/automation/.github/actions/npm-setup-package-version-from-tag@master
+        uses: https://192.168.100.252:3000/usov-andrey/automation/.github/actions/npm-setup-package-version-from-tag@v1
         with:
           tag: ${{ steps.ctx.outputs.version }}
 

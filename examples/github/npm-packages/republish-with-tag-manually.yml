@@ -20,7 +20,7 @@ on:
 
 jobs:
   publish:
-    uses: nii-energomash/automation/.github/workflows/npm-package-publish.yml@master
+    uses: nii-energomash/automation/.github/workflows/npm-package-publish.yml@v1
     with:
       mode: rebuild
       tag: ${{ inputs.git-tag }}

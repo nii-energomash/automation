@@ -102,7 +102,7 @@ jobs:
           cache: npm
 
       - name: 📝 Configure npm registries
-        uses: nii-energomash/automation/.github/actions/npm-registries-configure@master
+        uses: nii-energomash/automation/.github/actions/npm-registries-configure@v1
         with:
           npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
           node-auth-token: ${{ secrets.node-auth-token }}

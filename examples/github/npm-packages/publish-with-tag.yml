@@ -11,7 +11,7 @@ on:
 
 jobs:
   publish:
-    uses: nii-energomash/automation/.github/workflows/npm-package-publish.yml@master
+    uses: nii-energomash/automation/.github/workflows/npm-package-publish.yml@v1
     with:
       mode: release
       node-version: '20'

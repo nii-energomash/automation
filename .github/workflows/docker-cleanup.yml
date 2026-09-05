@@ -55,7 +55,7 @@ jobs:
 
     steps:
       - name: 🧹 Cleanup Docker images
-        uses: nii-energomash/automation/.github/actions/docker-cleanup@master
+        uses: nii-energomash/automation/.github/actions/docker-cleanup@v1
         with:
           # Умолчания входов тут не спасают: вызывающий workflow передаёт
           # значение явно, и пустая строка со schedule перекрывает default.

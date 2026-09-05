@@ -97,7 +97,7 @@ jobs:
 
     steps:
       - name: 🧠 Resolve build context
-        uses: nii-energomash/automation/.github/actions/resolve-context@master
+        uses: nii-energomash/automation/.github/actions/resolve-context@v1
         id: ctx
         with:
           mode: ${{ inputs.mode }}
@@ -115,13 +115,13 @@ jobs:
 
       - name: 🔍 Validate tag format
         if: inputs.mode != 'feature'
-        uses: nii-energomash/automation/.github/actions/validate-tag-format@master
+        uses: nii-energomash/automation/.github/actions/validate-tag-format@v1
         with:
           tag: ${{ steps.ctx.outputs.tag }}
 
       - name: 🔍 Validate tag on base branch
         if: inputs.mode != 'feature'
-        uses: nii-energomash/automation/.github/actions/validate-ref-on-master@master
+        uses: nii-energomash/automation/.github/actions/validate-ref-on-master@v1
         with:
           ref: ${{ steps.ctx.outputs.ref }}
           base-branch: ${{ inputs.base-branch }}
@@ -136,13 +136,13 @@ jobs:
           package-manager-cache: false
 
       - name: 📝 Configure NPM registries
-        uses: nii-energomash/automation/.github/actions/npm-registries-configure@master
+        uses: nii-energomash/automation/.github/actions/npm-registries-configure@v1
         with:
           npm-scopes-with-registers: ${{ inputs.npm-scopes-with-registers }}
           node-auth-token: ${{ secrets.node-auth-token }}
 
       - name: 📌 Set package version from tag
-        uses: nii-energomash/automation/.github/actions/npm-setup-package-version-from-tag@master
+        uses: nii-energomash/automation/.github/actions/npm-setup-package-version-from-tag@v1
         with:
           tag: ${{ steps.ctx.outputs.version }}
 

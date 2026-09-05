@@ -35,7 +35,7 @@ permissions:
 
 jobs:
   cleanup:
-    uses: nii-energomash/automation/.github/workflows/docker-cleanup.yml@master
+    uses: nii-energomash/automation/.github/workflows/docker-cleanup.yml@v1
     with:
       # При триггере schedule контекст inputs пуст и каждое выражение даёт ''.
       # Переиспользуемый workflow ждёт строки, поэтому show-only приводится

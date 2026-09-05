@@ -10,7 +10,7 @@ on:
 
 jobs:
   ci:
-    uses: https://192.168.100.252:3000/usov-andrey/automation/.gitea/workflows/npm-ci.yml@master
+    uses: https://192.168.100.252:3000/usov-andrey/automation/.gitea/workflows/npm-ci.yml@v1
     with:
       node-version: "20"
     secrets:

@@ -11,7 +11,7 @@ on:
 
 jobs:
   publish:
-    uses: https://192.168.100.252:3000/usov-andrey/automation/.gitea/workflows/npm-package-publish.yml@master
+    uses: https://192.168.100.252:3000/usov-andrey/automation/.gitea/workflows/npm-package-publish.yml@v1
     with:
       mode: release
       node-version: "20"
