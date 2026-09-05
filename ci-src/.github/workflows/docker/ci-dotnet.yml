@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+# источник: nii-energomash/automation/ci-src/.github/workflows/docker/ci-dotnet.yml
+# место: .github/workflows/ci.yml
+
+# Вариант для .NET-сервиса; для Python-сервиса — ci-python.yml. У потребителя
+# оба ложатся в один и тот же .github/workflows/ci.yml, поэтому берётся один.
+#
+# Проверка на пуш в любую ветку. pull_request намеренно не используется: пуш
+# ветки уже даёт прогон, и его статус виден в PR — второй прогон того же
+# состояния ничего не добавляет, зато удваивает время ожидания.
+#
+# Образ здесь не собирается: ломающийся Dockerfile ловится на publish-sha.
+
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+env:
+  # Целевая платформа — net9.0, но формат решения .slnx понимает только SDK 10,
+  # поэтому ставятся оба: рантайм 9 сам по себе с SDK 10 не приезжает.
+  DOTNET_VERSION: |
+    9.0.x
+    10.0.x
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      # Реестр не отдаёт пакеты анонимно, даже публичные. Токен подтверждает
+      # личность пользователя, а не выдаёт доступ, — поэтому встроенный
+      # GITHUB_TOKEN, представляющий репозиторий, не годится. Нужен classic PAT
+      # со scope read:packages; nuget.config раскрывает %GH_PACKAGES_TOKEN% сам.
+      - name: Restore dependencies
+        env:
+          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build

@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+# источник: nii-energomash/automation/ci-src/.gitea/workflows/docker/ci-dotnet.yml
+# место: .gitea/workflows/ci.yml
+
+# Вариант для .NET-сервиса; для Python-сервиса — ci-python.yml. У потребителя
+# оба ложатся в один и тот же .gitea/workflows/ci.yml, поэтому берётся один.
+#
+# Зеркало .github/workflows/ci.yml для внутреннего инстанса Gitea. Отличие одно
+# и вынужденное — источники пакетов: внутренние пакеты берутся из реестра
+# Gitea, а не из GitHub Packages, недостижимого отсюда.
+#
+# pull_request намеренно не используется: пуш ветки уже даёт прогон, и его
+# статус виден в PR — второй прогон того же состояния ничего не добавляет,
+# зато удваивает время ожидания.
+#
+# Образ здесь не собирается: ломающийся Dockerfile ловится на publish-sha.
+
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+env:
+  # Целевая платформа — net9.0, но формат решения .slnx понимает только SDK 10,
+  # поэтому ставятся оба: рантайм 9 сам по себе с SDK 10 не приезжает.
+  DOTNET_VERSION: |
+    9.0.x
+    10.0.x
+
+jobs:
+  build:
+    # Метка та же, что на GitHub, и это цель, а не совпадение. Держится она
+    # условием к раннеру Gitea: ubuntu-latest должна отображаться на
+    # ubuntu-совместимый образ с нодой — act_runner исполняет JavaScript-экшены
+    # (checkout, setup-dotnet) внутри контейнера задания системным node, и в
+    # образе без него падает первый же шаг.
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      # Адреса инстанса в репозитории нет: он приходит переменными репозитория,
+      # и список источников поэтому собирается на раннере.
+      #
+      # Маски — единственное, что правится под проект: по ним восстановление
+      # решает, что идёт из реестра Gitea, а что с nuget.org.
+      - name: Источники пакетов
+        id: nuget
+        uses: ./.gitea/actions/nuget-sources
+        with:
+          registry: ${{ vars.REGISTRY_HOST }}
+          owner: ${{ vars.REGISTRY_OWNER }}
+          patterns: Contoso.*
+
+      # Реестр не отдаёт пакеты анонимно. Встроенный GITEA_TOKEN не годится:
+      # авторизации в реестре пакетов у него нет — нужен личный токен.
+      #
+      # Файл, переданный через --configfile, заменяет всю цепочку конфигов, а не
+      # дополняет её. Отсюда обязательный --no-restore у сборки: неявное
+      # восстановление ушло бы по обычной цепочке и вернуло источники GitHub.
+      - name: Restore dependencies
+        env:
+          GT_PACKAGES_TOKEN: ${{ secrets.GT_PACKAGES_TOKEN }}
+        run: dotnet restore --configfile ${{ steps.nuget.outputs.configfile }}
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build

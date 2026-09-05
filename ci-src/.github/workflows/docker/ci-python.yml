@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+# источник: nii-energomash/automation/ci-src/.github/workflows/docker/ci-python.yml
+# место: .github/workflows/ci.yml
+
+# Вариант для Python-сервиса; для .NET-сервиса — ci-dotnet.yml. У потребителя
+# оба ложатся в один и тот же .github/workflows/ci.yml, поэтому берётся один.
+#
+# Проверка на пуш в любую ветку. pull_request намеренно не используется: пуш
+# ветки уже даёт прогон, и его статус виден в PR — второй прогон того же
+# состояния ничего не добавляет, зато удваивает время ожидания.
+#
+# Образ здесь не собирается: ломающийся Dockerfile ловится на publish-sha.
+
+name: CI
+
+on:
+  push:
+    branches: ['**']
+
+env:
+  # Версия для инструментов, а не для целевой машины: на раннере запускается
+  # Ruff. Версия целевой машины сюда не попадает вовсе — сборка образа и
+  # развёртывание с этим прогоном не связаны.
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      # Версия Ruff берётся из lock-файла, а не задаётся здесь: на машине
+      # разработчика он ставится оттуда же, и разъехавшиеся версии дали бы
+      # разное форматирование тут и там.
+      - name: Установка инструментов разработки
+        run: pip install -r requirements-dev.txt
+
+      - name: Соответствие формату
+        run: ruff format --check src
+
+      - name: Линтер
+        run: ruff check src
