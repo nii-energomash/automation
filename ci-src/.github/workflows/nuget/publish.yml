@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+# источник: nii-energomash/automation/ci-src/.github/workflows/nuget/publish.yml
+# место: .github/workflows/publish.yml
+
+# Публикация пакета в GitHub Packages. Версия берётся из git-тега vX.Y.Z и
+# передаётся сборке через -p:Version — в проекте она не хранится.
+# Единственный триггер — publish GitHub Release: релиз это преднамеренный акт с
+# release notes, голый push тега НЕ публикует. Повторный прогон делается кнопкой
+# Re-run, добор невыпущенного тега — созданием релиза; переиздать уже выпущенную
+# версию нельзя, реестр не даёт перезаписать пакет той же версии.
+#
+# Прогон CI здесь не переиспользуется: публикация сама пересобирает и
+# перепроверяет то, что выпускает.
+
+name: Publish
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  # SDK 10 умеет собирать net9.0, но dotnet test требует рантайм 9
+  DOTNET_VERSION: |
+    9.0.x
+    10.0.x
+  PACKAGE_OUTPUT_DIR: ./nupkg
+  REGISTRY_URL: 'https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout по тегу релиза
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      # Шаг общий с зеркалом в Gitea, см. .ci/actions/prepare-nuget-release.
+      - name: Версия из тега
+        id: release
+        uses: ./.ci/actions/prepare-nuget-release
+        with:
+          tag: ${{ github.ref_name }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore -p:Version=${{ steps.release.outputs.version }}
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build
+
+      # -p:Version повторяется при --no-build намеренно: от него зависят
+      # метаданные и имя готового .nupkg.
+      # Цель не указана: пакуется решение целиком, поэтому в нём не должно
+      # быть пакуемых проектов сверх самого пакета — иначе лишний .nupkg
+      # уедет в реестр.
+      - name: Pack NuGet
+        run: dotnet pack --configuration Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }} -p:Version=${{ steps.release.outputs.version }}
+
+      # Встроенный токен вместо PAT: он не истекает, не требует ручного
+      # обновления и ограничен этим репозиторием.
+      #
+      # Блока permissions мало: GITHUB_TOKEN публикует только пакеты, связанные
+      # с репозиторием прогона. Связь заводится в момент создания пакета по
+      # RepositoryUrl из csproj и новыми выпусками не переустанавливается.
+      # Пока пакета в реестре нет, а адрес в csproj верный, связь заведётся
+      # сама. Если всё же прилетит 403, доступ выдаётся вручную:
+      # Package settings → Manage Actions access → этот репозиторий с ролью Write.
+      - name: Publish to GitHub Packages
+        run: |
+          for package in ${{ env.PACKAGE_OUTPUT_DIR }}/*.nupkg; do
+            dotnet nuget push "$package" \
+              --source "${{ env.REGISTRY_URL }}" \
+              --api-key ${{ secrets.GITHUB_TOKEN }} \
+              --skip-duplicate
+          done
