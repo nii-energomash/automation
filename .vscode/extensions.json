@@ -1,7 +1,6 @@
 {
   "recommendations": [
     "editorconfig.editorconfig",
-    "esbenp.prettier-vscode",
     "redhat.vscode-yaml",
     "github.vscode-github-actions",
     "timonwong.shellcheck"
