@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# источник: nii-energomash/automation/ci-src/.ci/actions/prepare-nuget-release/action.yml
+# место: .ci/actions/prepare-nuget-release/action.yml
+
+# Общий шаг публикации для обоих зеркал: .github/workflows/publish.yml и
+# .gitea/workflows/publish.yml. Формат релизного тега — политика, которая
+# обязана совпадать, поэтому она живёт здесь в одном экземпляре.
+
+name: Prepare NuGet release
+description: Проверяет формат релизного тега и достаёт из него номер версии
+
+inputs:
+  tag:
+    description: Git-тег релиза в формате vX.Y.Z
+    required: true
+  tag-pattern:
+    description: Регулярное выражение формата тега
+    default: '^v[0-9]+\.[0-9]+\.[0-9]+$'
+
+outputs:
+  tag:
+    description: Проверенный git-тег релиза
+    value: ${{ steps.resolve.outputs.tag }}
+  version:
+    description: Номер версии для -p:Version — тег без ведущего v
+    value: ${{ steps.resolve.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    # Скрипт вызывается через bash, а не как ./run.sh: так не нужен бит
+    # исполнения, который Windows не проставит.
+    - id: resolve
+      shell: bash
+      env:
+        TAG: ${{ inputs.tag }}
+        TAG_PATTERN: ${{ inputs.tag-pattern }}
+      run: bash "$GITHUB_ACTION_PATH/run.sh"

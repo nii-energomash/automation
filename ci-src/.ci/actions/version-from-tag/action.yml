@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# источник: nii-energomash/automation/ci-src/.ci/actions/version-from-tag/action.yml
+# место: .ci/actions/version-from-tag/action.yml
+
+# Общий шаг релиза для обеих площадок: .github/workflows/release.yml и
+# .gitea/workflows/release.yml. Формат тега — политика, которая обязана
+# совпадать, поэтому она живёт здесь в одном экземпляре, а каталог назван не по
+# площадке.
+
+name: Version from tag
+description: Сверяет формат git-тега и выводит версию сервиса
+
+inputs:
+  tag:
+    description: Git-тег релиза в формате vX.Y.Z
+    required: true
+  tag-pattern:
+    description: Регулярное выражение формата тега
+    default: '^v[0-9]+\.[0-9]+\.[0-9]+$'
+
+outputs:
+  version:
+    description: Версия сервиса — тег без ведущего v
+    value: ${{ steps.resolve.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    # Скрипт вызывается через bash, а не как ./run.sh: так не нужен бит
+    # исполнения, который Windows не проставит.
+    - id: resolve
+      shell: bash
+      env:
+        TAG: ${{ inputs.tag }}
+        TAG_PATTERN: ${{ inputs.tag-pattern }}
+      run: bash "$GITHUB_ACTION_PATH/run.sh"
