@@ -11,3 +11,12 @@ Thumbs.db
 
 # Логи
 *.log
+
+# Секреты и локальные значения
+.runner
+.env
+*.env
+!*.env.example
+*.pem
+*.key
+*.crt
