@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# источник: nii-energomash/automation/ci-src/.gitea/actions/docker-cli/action.yml
+# место: .gitea/actions/docker-cli/action.yml
+
+# Экшен лежит в .gitea/, а не в .ci/: площадке GitHub он не нужен вовсе — там
+# docker приходит с раннером, а BuildKit ставит docker/setup-buildx-action.
+# В .ci/ выносится то, что обязано совпадать у обеих.
+
+name: Docker CLI
+description: >-
+  Ставит docker CLI и плагин buildx, если их нет в образе задания.
+  Демон не ставится: задание работает с демоном хоста
+
+inputs:
+  cli-version:
+    description: Версия статической сборки docker CLI
+    default: 29.7.2
+  buildx-version:
+    description: Версия плагина buildx, без ведущего v
+    default: 0.36.1
+
+runs:
+  using: composite
+  steps:
+    # Скрипт вызывается через bash, а не как ./run.sh: так не нужен бит
+    # исполнения, который Windows не проставит.
+    - shell: bash
+      env:
+        CLI_VERSION: ${{ inputs.cli-version }}
+        BUILDX_VERSION: ${{ inputs.buildx-version }}
+      run: bash "$GITHUB_ACTION_PATH/run.sh"

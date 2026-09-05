@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# источник: nii-energomash/automation/ci-src/.gitea/actions/release-upload/action.yml
+# место: .gitea/actions/release-upload/action.yml
+
+# Экшен лежит в .gitea/, а не в .ci/: он обращается к API релизов Gitea, и
+# площадке GitHub не пригодится — там то же делает одна команда gh release
+# upload. В .ci/ выносится то, что обязано совпадать у обеих.
+
+name: Release upload
+description: Прикрепляет файлы к релизу Gitea по его тегу
+
+inputs:
+  tag:
+    description: Тег релиза, к которому прикрепляются файлы
+    required: true
+  files:
+    description: Пути к файлам, по одному в строке
+    required: true
+  token:
+    description: Токен с правом записи в репозиторий
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # Скрипт вызывается через bash, а не как ./run.sh: так не нужен бит
+    # исполнения, который Windows не проставит.
+    - shell: bash
+      env:
+        TAG: ${{ inputs.tag }}
+        FILES: ${{ inputs.files }}
+        GT_TOKEN: ${{ inputs.token }}
+      run: bash "$GITHUB_ACTION_PATH/run.sh"

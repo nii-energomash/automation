@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# источник: nii-energomash/automation/ci-src/.gitea/actions/registry-cleanup/action.yml
+# место: .gitea/actions/registry-cleanup/action.yml
+
+# Экшен лежит в .gitea/, а не в .ci/: он обращается к API пакетов Gitea, и
+# площадке GitHub не пригодится — там удаление устроено иначе. В .ci/ выносится
+# то, что обязано совпадать у обеих.
+
+name: Registry cleanup
+description: >-
+  Удаляет из реестра Gitea технические образы старше указанного возраста.
+  Требует токен с областью package: чтение и запись
+
+inputs:
+  registry:
+    description: Адрес инстанса Gitea в форме хост:порт
+    required: true
+  owner:
+    description: Владелец пакета в Gitea
+    required: true
+  package:
+    description: Имя пакета-контейнера
+    required: true
+  days-old:
+    description: Возраст, начиная с которого образ удаляется, — дни
+    default: '1'
+  hours-old:
+    description: То же в часах, добавляется к дням (0–23)
+    default: '0'
+  show-only:
+    description: Только показать отобранное, ничего не удаляя
+    default: 'false'
+  token:
+    description: Токен с правом записи в пакеты
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # Скрипт вызывается через bash, а не как ./run.sh: так не нужен бит
+    # исполнения, который Windows не проставит.
+    - shell: bash
+      env:
+        REGISTRY: ${{ inputs.registry }}
+        OWNER: ${{ inputs.owner }}
+        PACKAGE: ${{ inputs.package }}
+        DAYS_OLD: ${{ inputs.days-old }}
+        HOURS_OLD: ${{ inputs.hours-old }}
+        SHOW_ONLY: ${{ inputs.show-only }}
+        GT_TOKEN: ${{ inputs.token }}
+      run: bash "$GITHUB_ACTION_PATH/run.sh"
