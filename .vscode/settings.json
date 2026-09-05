@@ -1,15 +1,3 @@
 {
-  "files.eol": "\n",
-
-  // Prettier назначен форматтером, но formatOnSave не включается: в репозитории
-  // три десятка файлов YAML, и при первой же правке воркфлоу prettier переписал
-  // бы его целиком. Форматирование остаётся ручным действием.
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "prettier.enable": true,
-  "prettier.requireConfig": true,
-
-  "[yaml]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
-  "[json]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
-  "[jsonc]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
-  "[markdown]": { "editor.defaultFormatter": "esbenp.prettier-vscode" }
+  "files.eol": "\n"
 }
