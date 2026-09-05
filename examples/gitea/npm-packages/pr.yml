@@ -13,4 +13,4 @@ jobs:
     with:
       node-version: "20"
     secrets:
-      node-auth-token: ${{ secrets.PACKAGES_READ_TOKEN }}
+      node-auth-token: ${{ secrets.GT_PACKAGES_TOKEN }}

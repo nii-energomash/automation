@@ -16,7 +16,7 @@ jobs:
     with:
       node-version: "20"
       npm-scopes-with-registers: |
-        @andrey-aka-skif:registry=https://npm.pkg.github.com
-        @nii-energomash:registry=https://npm.pkg.github.com
+        @${{ vars.NPM_SCOPE }}:registry=${{ vars.NPM_REGISTRY_URL }}
+        @${{ vars.NPM_ORG_SCOPE }}:registry=${{ vars.NPM_REGISTRY_URL }}
     secrets:
-      node-auth-token: ${{ secrets.GITHUB_TOKEN }}
+      node-auth-token: ${{ secrets.GH_PACKAGES_TOKEN }}

@@ -27,6 +27,6 @@ jobs:
       npm-tag: ${{ inputs.npm-tag }}
       node-version: "20"
       npm-scopes-with-registers: |
-        @andrey-aka-skif:registry=https://192.168.100.252:3000/api/packages/usov-andrey/npm/
+        @${{ vars.NPM_SCOPE }}:registry=${{ vars.NPM_REGISTRY_URL }}
     secrets:
-      node-auth-token: ${{ secrets.PACKAGES_PUBLISH_TOKEN }}
+      node-auth-token: ${{ secrets.GT_PACKAGES_TOKEN }}
