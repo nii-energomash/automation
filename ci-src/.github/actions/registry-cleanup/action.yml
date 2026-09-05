@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# источник: nii-energomash/automation/ci-src/.github/actions/registry-cleanup/action.yml
+# место: .github/actions/registry-cleanup/action.yml
+
+# Экшен лежит в .github/, а не в .ci/: он обращается к API пакетов GitHub, и
+# второй площадке не пригодится — во встроенном реестре Gitea удаление устроено
+# иначе. В .ci/ выносится то, что обязано совпадать у обеих.
+
+name: Registry cleanup
+description: >-
+  Удаляет из ghcr.io технические образы старше указанного возраста.
+  Требует permissions.packages.write
+
+inputs:
+  days-old:
+    description: Возраст, начиная с которого образ удаляется, — дни
+    default: '1'
+  hours-old:
+    description: То же в часах, добавляется к дням (0–23)
+    default: '0'
+  show-only:
+    description: Только показать отобранное, ничего не удаляя
+    default: 'false'
+  token:
+    description: Токен с правом записи в пакеты
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # Скрипт вызывается через bash, а не как ./run.sh: так не нужен бит
+    # исполнения, который Windows не проставит.
+    - shell: bash
+      env:
+        DAYS_OLD: ${{ inputs.days-old }}
+        HOURS_OLD: ${{ inputs.hours-old }}
+        SHOW_ONLY: ${{ inputs.show-only }}
+        GH_TOKEN: ${{ inputs.token }}
+      run: bash "$GITHUB_ACTION_PATH/run.sh"

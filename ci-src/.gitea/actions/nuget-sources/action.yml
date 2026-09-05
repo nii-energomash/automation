@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# источник: nii-energomash/automation/ci-src/.gitea/actions/nuget-sources/action.yml
+# место: .gitea/actions/nuget-sources/action.yml
+
+# Экшен лежит в .gitea/, а не в .ci/: он собирает список источников под реестр
+# Gitea, и площадке GitHub не пригодится — там источники записаны в nuget.config
+# в корне репозитория. В .ci/ выносится то, что обязано совпадать у обеих.
+
+name: NuGet sources for Gitea
+description: >-
+  Собирает список источников NuGet для реестра Gitea и кладёт его в рабочее
+  дерево. Токен в файл не попадает: он раскрывается из GT_PACKAGES_TOKEN
+  в момент восстановления
+
+inputs:
+  registry:
+    description: Адрес инстанса Gitea в форме хост:порт
+    required: true
+  owner:
+    description: Владелец пакетов в Gitea, он же имя пользователя источника
+    required: true
+  patterns:
+    description: >-
+      Маски пакетов, которые берутся из реестра Gitea, по одной в строке
+      (например, Contoso.*). Остальное уезжает на nuget.org
+    required: true
+  path:
+    description: Куда положить файл — относительно корня рабочего дерева
+    default: nuget.gitea.config
+
+outputs:
+  configfile:
+    description: Путь к собранному файлу источников
+    value: ${{ steps.write.outputs.configfile }}
+
+runs:
+  using: composite
+  steps:
+    # Скрипт вызывается через bash, а не как ./run.sh: так не нужен бит
+    # исполнения, который Windows не проставит.
+    - id: write
+      shell: bash
+      env:
+        REGISTRY: ${{ inputs.registry }}
+        OWNER: ${{ inputs.owner }}
+        PATTERNS: ${{ inputs.patterns }}
+        CONFIG_PATH: ${{ inputs.path }}
+      run: bash "$GITHUB_ACTION_PATH/run.sh"
