@@ -42,9 +42,10 @@ docs/                      индекс и разделы по темам
 ```
 
 Наполнение приезжает по шагам, порядок работ —
-в [#31](https://github.com/nii-energomash/automation/issues/31). Каталоги
-внутри `ci-src/` заведены и пока содержат только `README.md`; `configs/`,
-`deploy/` и `runners/` появятся вместе со своим содержимым.
+в [#31](https://github.com/nii-energomash/automation/issues/31). Сейчас
+заполнены `.ci/actions/` и npm-набор для обеих площадок; в каталогах
+`nuget/` и `docker/` пока только `README.md`, а `configs/`, `deploy/` и
+`runners/` появятся вместе со своим содержимым.
 
 Шаблоны воркфлоу лежат под `ci-src/`, а не в корневом `.github/workflows/`,
 намеренно: триггеры у них настоящие (`push`, `schedule`, `release`), и в
