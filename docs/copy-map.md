@@ -16,7 +16,18 @@
 
 ## Экшены
 
-Пока пусто.
+Общие для GitHub и Gitea, копируются каталогом целиком.
+
+| Здесь                                                 | У потребителя                                  |
+| ----------------------------------------------------- | ---------------------------------------------- |
+| `ci-src/.ci/actions/prepare-npm-release/action.yml`   | `.ci/actions/prepare-npm-release/action.yml`   |
+| `ci-src/.ci/actions/prepare-npm-release/run.sh`       | `.ci/actions/prepare-npm-release/run.sh`       |
+| `ci-src/.ci/actions/prepare-nuget-release/action.yml` | `.ci/actions/prepare-nuget-release/action.yml` |
+| `ci-src/.ci/actions/prepare-nuget-release/run.sh`     | `.ci/actions/prepare-nuget-release/run.sh`     |
+| `ci-src/.ci/actions/version-from-tag/action.yml`      | `.ci/actions/version-from-tag/action.yml`      |
+| `ci-src/.ci/actions/version-from-tag/run.sh`          | `.ci/actions/version-from-tag/run.sh`          |
+
+Назначение каждого — в [actions.md](actions.md).
 
 ## GitHub
 
