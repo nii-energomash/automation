@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+# источник: nii-energomash/automation/ci-src/.gitea/workflows/docker/publish-sha.yml
+# место: .gitea/workflows/publish-sha.yml
+
+# Технический образ на каждый коммит в master: им проверяют собранный сервис до
+# релиза. Тег один — sha-<короткий sha>, и по нему же его потом удаляет
+# автоочистка. Ни latest, ни версионного тега здесь не появляется: тем и другим
+# распоряжается релиз, и техническая сборка не должна их двигать.
+#
+# Про прямые вызовы docker CLI вместо docker/*-экшенов — см. release.yml.
+
+name: Publish sha
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+  packages: write
+
+# Коммиты в master идут подряд, а нужен образ последнего: сборка предыдущего
+# отменяется, не досчитавшись. Образа отменённого коммита не останется — для
+# технического тега это приемлемо.
+concurrency:
+  group: publish-sha
+  cancel-in-progress: true
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Семь символов — та же форма тега, что даёт type=sha на площадке GitHub,
+      # и ровно та, по которой отбирает автоочистка.
+      - name: Тег образа
+        run: echo "TAG=sha-${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+
+      # Про вычисление имени, а не константу — см. release.yml.
+      - name: Имя образа
+        env:
+          REGISTRY: ${{ vars.REGISTRY_HOST }}
+          OWNER: ${{ vars.REGISTRY_OWNER }}
+        run: |
+          NAME=$(printf '%s' "${GITHUB_REPOSITORY##*/}" | tr '[:upper:]' '[:lower:]')
+          echo "NAME=$NAME" >> "$GITHUB_ENV"
+          echo "IMAGE=$REGISTRY/$OWNER/$NAME" >> "$GITHUB_ENV"
+
+      - name: Docker CLI
+        uses: ./.gitea/actions/docker-cli
+
+      - name: Вход в реестр
+        env:
+          TOKEN: ${{ secrets.GT_PACKAGES_TOKEN }}
+          REGISTRY: ${{ vars.REGISTRY_HOST }}
+          REGISTRY_USER: ${{ vars.REGISTRY_OWNER }}
+        run: printf '%s' "$TOKEN" | docker login "$REGISTRY" -u "$REGISTRY_USER" --password-stdin
+
+      # Версия собирается из того же тега: сервис на /info отвечает
+      # 0.0.0-sha-<коммит>, и по ответу видно, что запущен не релиз и какой
+      # именно коммит запущен.
+      #
+      # Про --secret, --provenance=false и метки — см. release.yml.
+      - name: Сборка
+        env:
+          GT_PACKAGES_TOKEN: ${{ secrets.GT_PACKAGES_TOKEN }}
+        run: |
+          docker build \
+            --build-arg "API_VERSION=0.0.0-$TAG" \
+            --secret id=packages_token,env=GT_PACKAGES_TOKEN \
+            --provenance=false \
+            --label "org.opencontainers.image.title=$NAME" \
+            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --label "org.opencontainers.image.version=0.0.0-$TAG" \
+            --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -t "$IMAGE:$TAG" \
+            .
+
+      - name: Публикация
+        run: docker push "$IMAGE:$TAG"
+
+      # Демон общий с хостом и переживает задание: без уборки на машине раннера
+      # копятся образы и остаётся запись о входе в реестр.
+      - name: Уборка
+        if: always()
+        env:
+          REGISTRY: ${{ vars.REGISTRY_HOST }}
+        run: |
+          docker rmi "$IMAGE:$TAG" || true
+          docker logout "$REGISTRY" || true

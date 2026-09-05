@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+# источник: nii-energomash/automation/ci-src/.github/workflows/docker/registry-cleanup.yml
+# место: .github/workflows/registry-cleanup.yml
+
+# Автоочистка реестра от технических образов. Реестр засоряется линейно — по
+# образу на коммит в master, — и без уборки в списке версий пакета релизные теги
+# со временем перестают быть различимы.
+#
+# Расписание работает только из ветки по умолчанию: до слияния cron не
+# проверить, ручной запуск — проверить можно.
+
+name: Registry cleanup
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      days-old:
+        description: Возраст, начиная с которого образ удаляется, — дни
+        type: string
+        default: '1'
+      hours-old:
+        description: То же в часах, добавляется к дням (0–23)
+        type: string
+        default: '0'
+      show-only:
+        description: Только показать отобранное, ничего не удаляя
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # Экшен лежит в этом же репозитории, поэтому нужен checkout.
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # На запуске по расписанию inputs пуст, и значения берутся отсюда: у
+      # события schedule входов нет вовсе.
+      - name: Очистка технических образов
+        uses: ./.github/actions/registry-cleanup
+        with:
+          days-old: ${{ inputs.days-old || '1' }}
+          hours-old: ${{ inputs.hours-old || '0' }}
+          show-only: ${{ inputs.show-only || false }}
+          token: ${{ secrets.GITHUB_TOKEN }}
