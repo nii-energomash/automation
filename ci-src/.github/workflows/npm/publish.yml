@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+# источник: nii-energomash/automation/ci-src/.github/workflows/npm/publish.yml
+# место: .github/workflows/publish.yml
+
+# Публикация пакета в GitHub Packages. Версия публикуемого пакета берётся из
+# git-тега vX.Y.Z и проставляется в манифест на время прогона. В git манифест
+# сохраняет свою референсную версию.
+# Единственный триггер — publish GitHub Release: релиз это преднамеренный акт с
+# release notes, голый push тега НЕ публикует. Повторный прогон делается кнопкой
+# Re-run, добор невыпущенного тега — созданием релиза; переиздать уже выпущенную
+# версию нельзя, реестр не даёт перезаписать name@version.
+
+name: Publish
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  # Active LTS: с 28.10.2025, EOL 28.04.2028
+  NODE_VERSION: '24.x'
+  REGISTRY_URL: 'https://npm.pkg.github.com'
+  NPM_SCOPE: '@nii-energomash'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      # fetch-depth: 0 — нужен полный список тегов: dist-tag latest достаётся
+      # только старшему из них (см. шаг «Версия и dist-tag из тега»).
+      - name: Checkout по тегу релиза
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      # registry-url + scope → setup-node пишет scoped-строку @nii-energomash:registry=…
+      # (не дефолтный реестр) и auth через NODE_AUTH_TOKEN. Committed .npmrc не нужен.
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          registry-url: ${{ env.REGISTRY_URL }}
+          scope: ${{ env.NPM_SCOPE }}
+
+      - name: Install dependencies
+        run: npm ci --fund=false
+
+      # Шаг общий с зеркалом в Gitea, см. .ci/actions/prepare-npm-release.
+      - name: Версия и dist-tag из тега
+        id: release
+        uses: ./.ci/actions/prepare-npm-release
+        with:
+          tag: ${{ github.ref_name }}
+          prerelease: ${{ github.event.release.prerelease }}
+
+      - name: Build
+        run: npm run build
+
+      # Встроенный токен вместо PAT: он не истекает, не требует ручного
+      # обновления и ограничен этим репозиторием. Права даёт блок permissions.
+      - name: Publish to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm publish --tag "${{ steps.release.outputs.npm-tag }}"

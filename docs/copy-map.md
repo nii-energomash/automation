@@ -31,11 +31,23 @@
 
 ## GitHub
 
-Пока пусто.
+Сегмент типа проекта при копировании выбрасывается.
+
+| Здесь                                      | У потребителя                   |
+| ------------------------------------------ | ------------------------------- |
+| `ci-src/.github/workflows/npm/ci.yml`      | `.github/workflows/ci.yml`      |
+| `ci-src/.github/workflows/npm/publish.yml` | `.github/workflows/publish.yml` |
+
+Релизная модель набора — в [npm.md](npm.md).
 
 ## Gitea
 
-Пока пусто.
+| Здесь                                     | У потребителя                  |
+| ----------------------------------------- | ------------------------------ |
+| `ci-src/.gitea/workflows/npm/ci.yml`      | `.gitea/workflows/ci.yml`      |
+| `ci-src/.gitea/workflows/npm/publish.yml` | `.gitea/workflows/publish.yml` |
+
+Чем gitea-вариант отличается от github-варианта — в [npm.md](npm.md).
 
 ## Конфиги и деплой
 
