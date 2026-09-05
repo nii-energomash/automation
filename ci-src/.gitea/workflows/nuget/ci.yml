@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+# источник: nii-energomash/automation/ci-src/.gitea/workflows/nuget/ci.yml
+# место: .gitea/workflows/ci.yml
+
+# Зеркало .github/workflows/ci.yml для внутреннего инстанса Gitea.
+
+name: CI
+
+on:
+  push:
+    branches: ['**']
+
+env:
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+  # SDK 10 умеет собирать net9.0, но dotnet test требует рантайм 9
+  DOTNET_VERSION: |
+    9.0.x
+    10.0.x
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      # У setup-dotnet встроенного кеша нет, каталог пакетов кешируется отдельно.
+      # Ключ считается по всем csproj и Directory.Packages.props: правка любого из
+      # них инвалидирует кеш целиком, частичное попадание даёт restore-keys.
+      - name: Cache NuGet packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.NUGET_PACKAGES }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build
+
+      # Метаданные пакета иначе проверяются только в момент релиза.
+      # Версия здесь неважна — без -p:Version соберётся 1.0.0.
+      # Цель не указана: пакуется решение целиком, поэтому в нём не должно
+      # быть пакуемых проектов сверх самого пакета — иначе лишний .nupkg
+      # уедет в реестр.
+      - name: Pack (validate packaging)
+        run: dotnet pack --configuration Release --no-build --output ./nupkg

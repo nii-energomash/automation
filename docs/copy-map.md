@@ -33,21 +33,26 @@
 
 Сегмент типа проекта при копировании выбрасывается.
 
-| Здесь                                      | У потребителя                   |
-| ------------------------------------------ | ------------------------------- |
-| `ci-src/.github/workflows/npm/ci.yml`      | `.github/workflows/ci.yml`      |
-| `ci-src/.github/workflows/npm/publish.yml` | `.github/workflows/publish.yml` |
+| Здесь                                        | У потребителя                   |
+| -------------------------------------------- | ------------------------------- |
+| `ci-src/.github/workflows/npm/ci.yml`        | `.github/workflows/ci.yml`      |
+| `ci-src/.github/workflows/npm/publish.yml`   | `.github/workflows/publish.yml` |
+| `ci-src/.github/workflows/nuget/ci.yml`      | `.github/workflows/ci.yml`      |
+| `ci-src/.github/workflows/nuget/publish.yml` | `.github/workflows/publish.yml` |
 
-Релизная модель набора — в [npm.md](npm.md).
+Релизные модели наборов — в [npm.md](npm.md) и [nuget.md](nuget.md).
 
 ## Gitea
 
-| Здесь                                     | У потребителя                  |
-| ----------------------------------------- | ------------------------------ |
-| `ci-src/.gitea/workflows/npm/ci.yml`      | `.gitea/workflows/ci.yml`      |
-| `ci-src/.gitea/workflows/npm/publish.yml` | `.gitea/workflows/publish.yml` |
+| Здесь                                       | У потребителя                  |
+| ------------------------------------------- | ------------------------------ |
+| `ci-src/.gitea/workflows/npm/ci.yml`        | `.gitea/workflows/ci.yml`      |
+| `ci-src/.gitea/workflows/npm/publish.yml`   | `.gitea/workflows/publish.yml` |
+| `ci-src/.gitea/workflows/nuget/ci.yml`      | `.gitea/workflows/ci.yml`      |
+| `ci-src/.gitea/workflows/nuget/publish.yml` | `.gitea/workflows/publish.yml` |
 
-Чем gitea-вариант отличается от github-варианта — в [npm.md](npm.md).
+Чем gitea-вариант отличается от github-варианта — в [npm.md](npm.md) и
+[nuget.md](nuget.md).
 
 ## Конфиги и деплой
 

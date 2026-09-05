@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+# источник: nii-energomash/automation/ci-src/.gitea/workflows/nuget/publish.yml
+# место: .gitea/workflows/publish.yml
+
+# Публикация пакета в NuGet-реестр Gitea. Версия берётся из git-тега vX.Y.Z и
+# передаётся сборке через -p:Version — в проекте она не хранится.
+# Единственный триггер — publish Release: релиз это преднамеренный акт, голый
+# push тега НЕ публикует. Зеркало тянет с GitHub только рефы, релиз в Gitea
+# создаётся отдельно. Повторный прогон делается кнопкой Re-run, добор
+# невыпущенного тега — созданием релиза; переиздать уже выпущенную версию
+# нельзя, реестр не даёт перезаписать пакет той же версии.
+#
+# Прогон CI здесь не переиспользуется: публикация сама пересобирает и
+# перепроверяет то, что выпускает.
+
+name: Publish
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  # SDK 10 умеет собирать net9.0, но dotnet test требует рантайм 9
+  DOTNET_VERSION: |
+    9.0.x
+    10.0.x
+  PACKAGE_OUTPUT_DIR: ./nupkg
+  REGISTRY_URL: 'https://${{ vars.REGISTRY_HOST }}/api/packages/${{ vars.REGISTRY_OWNER }}/nuget/index.json'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout по тегу релиза
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      # Шаг общий с зеркалом на GitHub, см. .ci/actions/prepare-nuget-release.
+      - name: Версия из тега
+        id: release
+        uses: ./.ci/actions/prepare-nuget-release
+        with:
+          tag: ${{ github.ref_name }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore -p:Version=${{ steps.release.outputs.version }}
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build
+
+      # -p:Version повторяется при --no-build намеренно: от него зависят
+      # метаданные и имя готового .nupkg.
+      # Цель не указана: пакуется решение целиком, поэтому в нём не должно
+      # быть пакуемых проектов сверх самого пакета — иначе лишний .nupkg
+      # уедет в реестр.
+      - name: Pack NuGet
+        run: dotnet pack --configuration Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }} -p:Version=${{ steps.release.outputs.version }}
+
+      # Здесь остаётся PAT, в отличие от GitHub. Автоматический GITEA_TOKEN
+      # не имеет авторизации на запись в реестр пакетов — документация Gitea
+      # прямо предписывает обходиться персональным токеном.
+      - name: Publish package to Gitea Registry
+        run: |
+          for package in ${{ env.PACKAGE_OUTPUT_DIR }}/*.nupkg; do
+            dotnet nuget push "$package" \
+              --source "${{ env.REGISTRY_URL }}" \
+              --api-key ${{ secrets.GT_PACKAGES_TOKEN }} \
+              --skip-duplicate
+          done
