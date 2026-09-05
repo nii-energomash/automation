@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+# источник: nii-energomash/automation/ci-src/.ci/actions/prepare-npm-release/action.yml
+# место: .ci/actions/prepare-npm-release/action.yml
+
+# Общий шаг публикации для обоих зеркал: .github/workflows/publish.yml и
+# .gitea/workflows/publish.yml. Выбор dist-тега — политика, которая обязана
+# совпадать, поэтому она живёт здесь в одном экземпляре.
+
+name: Prepare npm release
+description: Проставляет версию из git-тега и выбирает dist-tag публикации
+
+inputs:
+  tag:
+    description: Git-тег релиза в формате vX.Y.Z
+    required: true
+  prerelease:
+    description: Релиз помечен предварительным — публикуется под dist-тегом next
+    default: 'false'
+  manifest-dir:
+    description: >-
+      Каталог с package.json относительно корня репозитория. Job-уровневый
+      defaults.run.working-directory на шаги composite-экшна не действует,
+      поэтому каталог передаётся явно.
+    default: '.'
+  tag-pattern:
+    description: Регулярное выражение формата тега
+    default: '^v[0-9]+\.[0-9]+\.[0-9]+$'
+  tag-glob:
+    description: Грубый префильтр для git tag --list, точный отбор делает tag-pattern
+    default: 'v*'
+  lts-prefix:
+    description: >-
+      Префикс dist-тега линии сопровождения: lts- + v3 = lts-v3. Для актуальной
+      линии путь побочный, её штатный dist-тег latest. Префикс, а не суффикс:
+      v3-lts реестр Gitea читает как версию 3.0.0-lts и отвергает.
+    default: 'lts-'
+
+outputs:
+  npm-tag:
+    description: dist-tag, под которым публикуется версия
+    value: ${{ steps.resolve.outputs.npm-tag }}
+
+runs:
+  using: composite
+  steps:
+    # Скрипт вызывается через bash, а не как ./run.sh: так не нужен бит
+    # исполнения, который Windows не проставит.
+    - id: resolve
+      shell: bash
+      env:
+        TAG: ${{ inputs.tag }}
+        PRERELEASE: ${{ inputs.prerelease }}
+        MANIFEST_DIR: ${{ inputs.manifest-dir }}
+        TAG_PATTERN: ${{ inputs.tag-pattern }}
+        TAG_GLOB: ${{ inputs.tag-glob }}
+        LTS_PREFIX: ${{ inputs.lts-prefix }}
+      run: bash "$GITHUB_ACTION_PATH/run.sh"
