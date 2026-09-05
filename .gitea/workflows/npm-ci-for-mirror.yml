@@ -46,7 +46,7 @@ on:
         default: ""
         description: >
           Массив строк, разделенный переносом строки, и содержащий scope и адрес регистра в формате
-          @\<scope\>:registry=\<uri\>. Например: @username:registry=https://192.168.100.252:3000/api/packages/username/npm/
+          @\<scope\>:registry=\<uri\>. Например: @username:registry=https://gitea.example/api/packages/username/npm/
 
     secrets:
       node-auth-token:
