@@ -1,0 +1,60 @@
+# источник: nii-energomash/automation/runners/gitea/docker-compose.example.yaml
+# место: <runner-dir>/docker-compose.yaml
+
+# Раннер поднимается контейнером. Значения, привязанные к машине и к сети,
+# заменены плейсхолдерами в угловых скобках; что чем заменять — в
+# docs/gitea-runner.md.
+
+services:
+  runner:
+    # Тег плавающий, как в живой настройке: обновление раннера приезжает
+    # молча, вместе с очередным docker compose pull.
+    image: docker.io/gitea/runner:latest
+    restart: unless-stopped
+
+    environment:
+      CONFIG_FILE: /config.yaml
+
+      # Регистрация происходит при первом старте, из этих трёх переменных;
+      # значения приходят из .env рядом с этим файлом. Отдельного прогона
+      # act_runner register нет.
+      GITEA_INSTANCE_URL: "${GITEA_INSTANCE_URL}"
+      GITEA_RUNNER_REGISTRATION_TOKEN: "${GITEA_RUNNER_REGISTRATION_TOKEN}"
+      GITEA_RUNNER_NAME: "${GITEA_RUNNER_NAME}"
+
+      # Сертификат удостоверяющего центра инстанса — для самого раннера.
+      # Контейнеру задания он прокидывается отдельно, через container.options
+      # в config.yaml.
+      SSL_CERT_FILE: /etc/ssl/certs/gitea-ca.crt
+
+    volumes:
+      - ./config.yaml:/config.yaml
+
+      # Здесь раннер держит .runner — файл регистрации с токеном. В
+      # репозиторий он не попадает никогда: при восстановлении раннер
+      # регистрируется заново.
+      - ./data:/data
+
+      # Кеш выкачанных экшенов. Кеш заданий (actions/cache) живёт не здесь,
+      # а внутри контейнера, см. cache.dir в config.yaml.
+      - ./actions-cache:/root/.cache/act
+
+      # Контейнеры заданий создаёт демон хоста, а не раннер: они соседи
+      # раннера, а не его потомки. Отсюда же следствие про пути в
+      # container.options — они хостовые.
+      - /var/run/docker.sock:/var/run/docker.sock
+
+      - ./certs/gitea-ca.crt:/etc/ssl/certs/gitea-ca.crt:ro
+
+    # Сеть внешняя, поднятая другим стеком, адрес в ней фиксированный. Это
+    # снимок вынужденного состояния, а не образец: своей изолированной сети
+    # у раннера сейчас нет, и адресация держится на литеральных адресах.
+    # Целевая раскладка — собственная сеть раннера с обращением по именам
+    # сервисов, тогда и фиксированный адрес не нужен.
+    networks:
+      <runner-net>:
+        ipv4_address: <runner-ip>
+
+networks:
+  <runner-net>:
+    external: true
