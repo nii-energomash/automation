@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+# Самопроверка этого репозитория, а не шаблон. Шапок «# источник:» / «# место:»
+# у него поэтому нет: он никуда не копируется.
+#
+# Собирать здесь нечего, и работоспособность шаблонов эта проверка не
+# подтверждает — она держится на сверке с живым репозиторием. Здесь ловится
+# то, что ломается после переноса: битый YAML, сломанный run.sh, разъехавшаяся
+# шапка, забытая строка в карте копирования.
+#
+# pull_request намеренно не используется: пуш ветки уже даёт прогон, и его
+# статус виден в PR — второй прогон того же состояния ничего не добавляет.
+
+name: CI
+
+on:
+  push:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+env:
+  # Dependabot этот образ не отслеживает: экосистема docker смотрит на
+  # Dockerfile, а не на docker run внутри шага. Пин двигается руками.
+  ACTIONLINT_VERSION: '1.7.12'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Шапки, карта копирования, состав .github/
+        run: bash .github/scripts/check-ci-src.sh
+
+      - name: Раскладка-стенд
+        run: bash .github/scripts/stage-consumer-layout.sh "$RUNNER_TEMP/stage"
+
+      # Линтуется стенд, а не ci-src/: от корня стенда резолвятся ./-пути до
+      # локальных экшенов, и вместе с ними actionlint сверяет with: со списком
+      # inputs каждого экшена.
+      - name: actionlint
+        working-directory: ${{ runner.temp }}/stage
+        run: |
+          docker run --rm --volume "$PWD:/repo" --workdir /repo \
+            "rhysd/actionlint:$ACTIONLINT_VERSION" \
+            -color .github/workflows/*.yml .gitea/workflows/*.yml
+
+      # shellcheck на ubuntu-раннере предустановлен, ставить нечего.
+      # Порог обычный: находки чинятся здесь, а расхождение с живой копией
+      # закрывается переносом правки туда.
+      - name: shellcheck
+        run: |
+          find ci-src .github/scripts -name '*.sh' -print0 |
+            xargs -0 shellcheck
