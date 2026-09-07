@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://json.schemastore.org/dependabot-2.0.json
+
+# источник: nii-energomash/automation/ci-src/.github/dependabot.yml
+# место: .github/dependabot.yml
+
+# Здесь только github-actions: это CI-часть, одинаковая у всех проектов
+# организации. Экосистемы самого проекта — npm, nuget, pip — проектные и
+# дописываются на месте, потому что зависят от того, где лежит манифест и чем
+# порождается лок-файл. Подключать их не всегда правильно: там, где лок
+# собирается своим инструментом или реестр требует аутентификации, Dependabot
+# ломает больше, чем чинит, — и тогда вместо блока пишется комментарий, почему
+# экосистема выключена намеренно.
+#
+# Файл кладётся в корневой .github/ репозитория-потребителя и там начинает
+# действовать сам, без триггера: Dependabot читает единственный путь
+# .github/dependabot.yml. Поэтому положить его мимо места — не «не сработает»,
+# а «сработает не то».
+
+version: 2
+updates:
+  # Без этого экшены снова тихо отстанут на несколько мажоров.
+  # Зеркало в .gitea/workflows dependabot не видит — там версии поднимаются
+  # вручную вслед за этими.
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    commit-message:
+      prefix: 'ci'
+    groups:
+      github-actions:
+        patterns: ['*']
