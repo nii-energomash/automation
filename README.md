@@ -38,7 +38,7 @@ ci-src/                    слепок CI-части репозитория-п�
     actions/               экшены, общие для обеих площадок
 configs/nginx/             конфиги, уезжающие внутрь образа
 deploy/systemd/            install.sh, *.service, *.env.example
-runners/gitea/             config.example.yaml, процедура установки
+runners/gitea/             образцы config.yaml, compose и .env раннера
 docs/                      индекс и разделы по темам
 .github/                   своё, не шаблоны: самопроверка, dependabot.yml
 ```
@@ -46,8 +46,9 @@ docs/                      индекс и разделы по темам
 Наполнение приезжает по шагам, порядок работ —
 в [#31](https://github.com/nii-energomash/automation/issues/31). Сейчас
 заполнены `.ci/actions/`, площадочные `actions/`, наборы npm, nuget и docker
-для обеих площадок и `dependabot.yml`; `configs/`, `deploy/` и `runners/`
-появятся вместе со своим содержимым.
+для обеих площадок, `dependabot.yml` и настройки раннера Gitea в
+`runners/gitea/`; `configs/` и `deploy/` появятся вместе со своим
+содержимым.
 
 Шаблоны воркфлоу лежат под `ci-src/`, а не в корневом `.github/workflows/`,
 намеренно: триггеры у них настоящие (`push`, `schedule`, `release`), и в
