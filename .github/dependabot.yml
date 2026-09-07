@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://json.schemastore.org/dependabot-2.0.json
+
+# Конфигурация самого репозитория, а не шаблон. Шаблон, который копируют
+# потребители, лежит в ci-src/.github/dependabot.yml и сюда не поднимается: тут
+# он перестал бы быть шаблоном и стал бы этим файлом.
+
+version: 2
+updates:
+  # Свой воркфлоу самопроверки.
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    commit-message:
+      prefix: 'ci'
+    groups:
+      github-actions:
+        patterns: ['*']
+
+  # Шаблоны под ci-src/. Перечень каталогов явный, потому что рекурсии нет: при
+  # directory отличном от '/' Dependabot берёт файлы по маске *.yml ровно в
+  # указанном каталоге и глубже не идёт. Новый каталог типа требует новой
+  # строки здесь — иначе его пины останутся на месте молча.
+  #
+  # Каталогов экшенов в списке нет намеренно: в каждом action.yml ровно один
+  # шаг `run: bash "$GITHUB_ACTION_PATH/run.sh"`, внешних uses: нет, и брать
+  # оттуда нечего. Каталог добавляется сюда тогда, когда в его экшене появится
+  # обращение к чужому действию.
+  #
+  # Пины в .gitea/ поднимаются вместе с github-вариантом: Dependabot резолвит
+  # их против github.com, а исполняет зеркало внутреннего Gitea, поэтому после
+  # влития бампа проверяется, доехал ли тег до зеркала.
+  - package-ecosystem: 'github-actions'
+    directories:
+      - '/ci-src/.github/workflows/npm'
+      - '/ci-src/.github/workflows/nuget'
+      - '/ci-src/.github/workflows/docker'
+      - '/ci-src/.gitea/workflows/npm'
+      - '/ci-src/.gitea/workflows/nuget'
+      - '/ci-src/.gitea/workflows/docker'
+    schedule:
+      interval: 'weekly'
+    commit-message:
+      prefix: 'ci'
+    groups:
+      ci-src:
+        patterns: ['*']
