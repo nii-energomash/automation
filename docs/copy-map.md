@@ -88,6 +88,16 @@ docker-набора: у потребителя это один файл `ci.yml`
 Чем gitea-вариант отличается от github-варианта — в [npm.md](npm.md),
 [nuget.md](nuget.md) и [docker.md](docker.md).
 
+## Dependabot
+
+Копируется один в один и только на GitHub: в Gitea Dependabot отсутствует как
+явление. Что в этом файле есть, чего нет и почему — в
+[dependabot.md](dependabot.md).
+
+| Здесь                           | У потребителя            |
+| ------------------------------- | ------------------------ |
+| `ci-src/.github/dependabot.yml` | `.github/dependabot.yml` |
+
 ## Конфиги и деплой
 
 Пока пусто.
