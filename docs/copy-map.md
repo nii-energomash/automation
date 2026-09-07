@@ -98,6 +98,19 @@ docker-набора: у потребителя это один файл `ci.yml`
 | ------------------------------- | ------------------------ |
 | `ci-src/.github/dependabot.yml` | `.github/dependabot.yml` |
 
+## Раннер Gitea
+
+В репозиторий-потребитель не копируется вовсе: место назначения — каталог
+раннера на хосте, `<runner-dir>`. Строка `# место:` в шапке указывает путь
+внутри него. Установка и остальные плейсхолдеры — в
+[gitea-runner.md](gitea-runner.md).
+
+| Здесь                                       | На хосте раннера                   |
+| ------------------------------------------- | ---------------------------------- |
+| `runners/gitea/config.example.yaml`         | `<runner-dir>/config.yaml`         |
+| `runners/gitea/docker-compose.example.yaml` | `<runner-dir>/docker-compose.yaml` |
+| `runners/gitea/.env.example`                | `<runner-dir>/.env`                |
+
 ## Конфиги и деплой
 
 Пока пусто.
