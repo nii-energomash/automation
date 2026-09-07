@@ -29,6 +29,7 @@ ci-src/                    слепок CI-части репозитория-п�
       docker/              ci-python.yml, ci-dotnet.yml, publish-sha.yml,
                            release.yml, registry-cleanup.yml
     actions/               экшены только для GitHub
+    dependabot.yml         пины экшенов, только для GitHub
   .gitea/
     workflows/
       npm/ nuget/ docker/  те же файлы с дельтой площадки
@@ -39,18 +40,26 @@ configs/nginx/             конфиги, уезжающие внутрь об�
 deploy/systemd/            install.sh, *.service, *.env.example
 runners/gitea/             config.example.yaml, процедура установки
 docs/                      индекс и разделы по темам
+.github/                   своё, не шаблоны: самопроверка, dependabot.yml
 ```
 
 Наполнение приезжает по шагам, порядок работ —
 в [#31](https://github.com/nii-energomash/automation/issues/31). Сейчас
-заполнены `.ci/actions/`, площадочные `actions/` и наборы npm, nuget и docker
-для обеих площадок; `configs/`, `deploy/` и `runners/` появятся вместе со
-своим содержимым.
+заполнены `.ci/actions/`, площадочные `actions/`, наборы npm, nuget и docker
+для обеих площадок и `dependabot.yml`; `configs/`, `deploy/` и `runners/`
+появятся вместе со своим содержимым.
 
 Шаблоны воркфлоу лежат под `ci-src/`, а не в корневом `.github/workflows/`,
 намеренно: триггеры у них настоящие (`push`, `schedule`, `release`), и в
 корне они запускались бы здесь — чистка реестра пошла бы по ночам, публикация
 срабатывала бы на релизе этого репозитория.
+
+С `dependabot.yml` то же, но строже: воркфлоу для запуска нужен подходящий
+триггер, а конфигурации Dependabot довольно имени и места — `.github/`
+в корне читается им как единственный источник настроек. Под `ci-src/`
+поэтому уезжает не только то, что запустилось бы, но и то, что применилось
+бы. Что в корневом `.github/` допустимо, проверяется самопроверкой:
+[docs/selfcheck.md](docs/selfcheck.md).
 
 ## Архив прежнего подхода
 
