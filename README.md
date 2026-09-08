@@ -49,8 +49,7 @@ docs/                      индекс и разделы по темам
 .github/                   своё, не шаблоны: самопроверка, dependabot.yml
 ```
 
-Наполнение приезжает по шагам, порядок работ —
-в [#31](https://github.com/nii-energomash/automation/issues/31). Сейчас
+Наполнение приезжает по шагам, каждый — своей задачей. Сейчас
 заполнены `.ci/actions/`, площадочные `actions/`, наборы npm, nuget и docker
 для обеих площадок, `dependabot.yml`, настройки раннера Gitea в
 `runners/gitea/`, раздел `deploy/` — установка службой systemd, `Dockerfile`
