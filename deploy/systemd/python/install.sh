@@ -58,7 +58,7 @@ require_root() {
 }
 
 resolve_source() {
-    SOURCE=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+    SOURCE=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 }
 
 check_source() {
