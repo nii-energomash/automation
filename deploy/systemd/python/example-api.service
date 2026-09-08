@@ -1,0 +1,43 @@
+# источник: nii-energomash/automation/deploy/systemd/python/example-api.service
+# место: deploy/example-api.service
+
+# Юнит службы python-сервиса. Ставится в /etc/systemd/system/example-api.service
+# скриптом deploy/install.sh; имя файла обязано совпадать с именем службы.
+# Что переименовать под свой проект — в docs/deploy.md референса.
+#
+# Значения, зависящие от машины, задаются в /etc/example/api.env.
+
+[Unit]
+Description=Служба API
+
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Код лежит подкаталогом src: run_waitress.py импортирует соседние модули без
+# префикса, и корнем импортов служит каталог самого скрипта — его python и
+# ставит в sys.path[0].
+WorkingDirectory=/opt/example/api
+ExecStart=/opt/example/api/.venv/bin/python /opt/example/api/src/run_waitress.py
+
+Restart=always
+RestartSec=10
+
+# Обработчиков сигналов waitress не ставит вовсе. SIGINT доходит до него
+# исключением KeyboardInterrupt, на котором сервер закрывает слушающие сокеты и
+# каналы; SIGTERM обработать некому, и процесс погиб бы на месте.
+KillSignal=SIGINT
+
+SyslogIdentifier=example-api
+
+User=example
+Group=example
+
+EnvironmentFile=/etc/example/api.env
+
+# Вывод не буферизуется: иначе строки доходят до journald пачками или теряются
+# при остановке службы.
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

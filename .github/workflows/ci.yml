@@ -54,5 +54,5 @@ jobs:
       # закрывается переносом правки туда.
       - name: shellcheck
         run: |
-          find ci-src .github/scripts -name '*.sh' -print0 |
+          find ci-src deploy .github/scripts -name '*.sh' -print0 |
             xargs -0 shellcheck
