@@ -1,0 +1,84 @@
+# syntax=docker/dockerfile:1
+
+# ЗАГОТОВКА, а не перенос. Суффикс .draft значит, что файл никем не прогонялся:
+# копировать его в проект нельзя, в docs/copy-map.md его нет, строки «# место:»
+# у него тоже нет — класть некуда.
+#
+# Основа — рабочий Dockerfile SPA, поверх неё применены решения, уже принятые
+# в референсе для остальных профилей. Заготовка живёт до переделки CI/CD
+# самого SPA, после чего заменяется переносом из живого репозитория и суффикс
+# уходит. Что должна дать переделка — в docs/deploy.md и в задаче #53 этого
+# репозитория.
+#
+# Директива syntax обязана оставаться первой строкой файла: после комментария
+# она сама становится комментарием и молча перестаёт работать.
+
+ARG NODE_VERSION=20-alpine
+ARG NGINX_VERSION=stable-alpine
+
+FROM node:${NODE_VERSION} AS build
+
+WORKDIR /app
+
+# Реестр приходит аргументами сборки, а не литералом: набор двойной, и на
+# Gitea адрес с владельцем берутся из переменных репозитория REGISTRY_HOST и
+# REGISTRY_OWNER. Зашитый npm.pkg.github.com сделал бы сборку на второй
+# площадке неработающей.
+ARG NPM_SCOPE=@example-org
+ARG NPM_REGISTRY=https://npm.pkg.github.com/
+
+# .npmrc проекта (project/npm/.npmrc референса) едет в сборку: он снимает из
+# лока адреса тарболов, и пакет берётся из того реестра, который настроен
+# здесь. Без него лок увёл бы npm на реестр, из которого его писали.
+#
+# ОТКРЫТО: .dockerignore SPA сейчас выбрасывает .npmrc — при переделке его
+# нужно оттуда убрать, иначе файл до сборки не доедет.
+COPY package.json package-lock.json .npmrc ./
+
+# Токен — секретом BuildKit под тем же именем packages_token, что и в
+# остальных профилях: ARG остался бы в `docker history` готового образа.
+# Проверка на пустой файл явная — BuildKit подставляет его молча, и npm
+# ответил бы 401 без намёка на причину.
+#
+# Из адреса реестра снимается схема и добавляется завершающий слэш: строка
+# авторизации адресует реестр вместе с путём, а у Gitea путь в адресе есть
+# (/api/packages/<owner>/npm/).
+RUN --mount=type=secret,id=packages_token \
+    set -eu; \
+    if [ ! -s /run/secrets/packages_token ]; then \
+      echo 'Не передан секрет packages_token; нужен токен с правом чтения пакетов' >&2; \
+      exit 1; \
+    fi; \
+    REGISTRY_PATH=$(printf '%s' "$NPM_REGISTRY" \
+      | sed -e 's#^[a-z]*://##' -e 's#/*$#/#'); \
+    { \
+      echo "$NPM_SCOPE:registry=$NPM_REGISTRY"; \
+      echo "//$REGISTRY_PATH:_authToken=$(cat /run/secrets/packages_token)"; \
+    } > "$HOME/.npmrc"; \
+    npm ci; \
+    rm -f "$HOME/.npmrc"
+
+COPY . .
+
+RUN npm run build
+
+# ОТКРЫТО: аргумент API_VERSION. Воркфлоу набора передаёт его в каждую сборку,
+# а статике версия не нужна ни для чего, кроме опознания образа. Решить, в
+# каком виде она остаётся — меткой org.opencontainers.image.version, переменной
+# окружения или файлом рядом со статикой, — и принимать её здесь.
+#
+# ОТКРЫТО: каталог /licenses. У остальных профилей он обязателен как
+# обязательство при передаче образа; здесь его нет, а .dockerignore вдобавок
+# выбрасывает LICENSE и *.md.
+
+FROM nginx:${NGINX_VERSION} AS runtime
+
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Серверная секция образа — deploy/docker/spa/nginx.conf референса, у
+# потребителя она лежит в docker/nginx.conf.
+COPY ./docker/nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
