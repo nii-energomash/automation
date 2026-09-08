@@ -1,0 +1,41 @@
+# источник: nii-energomash/automation/deploy/systemd/dotnet/example-api.service
+# место: deploy/example-api.service
+
+# Юнит службы .NET-сервиса. Ставится в /etc/systemd/system/example-api.service
+# скриптом deploy/install.sh; имя файла обязано совпадать с именем службы.
+# Что переименовать под свой проект — в docs/deploy.md референса.
+#
+# Значения, зависящие от машины, задаются в /etc/example/api.env.
+
+[Unit]
+Description=Служба API
+
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=/opt/example/api
+ExecStart=/opt/example/api/Example.Api
+
+Restart=always
+RestartSec=10
+KillSignal=SIGINT
+SyslogIdentifier=example-api
+
+User=example
+Group=example
+
+# Значения ниже перекрывают файл окружения: systemd применяет директивы в
+# порядке следования.
+EnvironmentFile=/etc/example/api.env
+
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+Environment=Serilog__WriteTo__0__Args__path=/var/log/example/api/Example.Api-.txt
+
+# Каталог /var/log/example/api создаёт systemd и отдаёт его пользователю службы.
+LogsDirectory=example/api
+LogsDirectoryMode=0750
+
+[Install]
+WantedBy=multi-user.target
