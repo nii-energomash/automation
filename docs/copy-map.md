@@ -132,3 +132,16 @@ docker-набора: у потребителя это один файл `ci.yml`
 | `deploy/systemd/dotnet/api.env.example`     | `deploy/api.env.example`      |
 | `deploy/systemd/python/api.env.example`     | `deploy/api.env.example`      |
 | `deploy/docker/spa/nginx.conf`              | `docker/nginx.conf`           |
+
+## Настройки проекта
+
+Конфиги, которые читает инструмент сборки. Содержимое копируется без
+изменений, а путь назначения из пути здесь не выводится — как в разделах
+`deploy/` и `runners/`, его говорит строка `# место:` в шапке файла.
+
+| Здесь                                             | У потребителя                         |
+| ------------------------------------------------- | ------------------------------------- |
+| `project/npm/.npmrc`                              | `.npmrc`                              |
+| `project/npm/scripts/check-lockfile-resolved.mjs` | `scripts/check-lockfile-resolved.mjs` |
+
+Зачем эти файлы и как подключается сторож — в [npm.md](npm.md).
