@@ -111,6 +111,24 @@ docker-набора: у потребителя это один файл `ci.yml`
 | `runners/gitea/docker-compose.example.yaml` | `<runner-dir>/docker-compose.yaml` |
 | `runners/gitea/.env.example`                | `<runner-dir>/.env`                |
 
-## Конфиги и деплой
+## Деплой
 
-Пока пусто.
+Путь здесь устроен как `deploy/<способ доставки>/<профиль проекта>` и с путём
+у потребителя не совпадает: набор `systemd/` ложится в `deploy/`, содержимое
+`docker/` — в `docker/`, рядом с `Dockerfile`.
+
+Наборов `systemd/` два, и у потребителя оба претендуют на один и тот же
+`deploy/` — берётся тот, что подходит языку проекта, как `ci-dotnet.yml` и
+`ci-python.yml` в docker-наборе. Имена файлов юнита и шаблона окружения
+переименовываются вслед за именем службы: что на что заменить — в
+[deploy.md](deploy.md).
+
+| Здесь                                       | У потребителя                 |
+| ------------------------------------------- | ----------------------------- |
+| `deploy/systemd/dotnet/install.sh`          | `deploy/install.sh` — один из |
+| `deploy/systemd/python/install.sh`          | `deploy/install.sh` — двух    |
+| `deploy/systemd/dotnet/example-api.service` | `deploy/example-api.service`  |
+| `deploy/systemd/python/example-api.service` | `deploy/example-api.service`  |
+| `deploy/systemd/dotnet/api.env.example`     | `deploy/api.env.example`      |
+| `deploy/systemd/python/api.env.example`     | `deploy/api.env.example`      |
+| `deploy/docker/spa/nginx.conf`              | `docker/nginx.conf`           |
