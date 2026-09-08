@@ -40,6 +40,7 @@ deploy/                    как сервис доводится до рабо�
   systemd/
     dotnet/ python/        install.sh, *.service, *.env.example
   docker/
+    dotnet/ python/        Dockerfile и .dockerignore сервиса
     spa/                   то, что уезжает внутрь образа
 project/                   конфиги проекта, которые читает сборка
   npm/                     .npmrc и сторож при package-lock.json
@@ -52,8 +53,11 @@ docs/                      индекс и разделы по темам
 в [#31](https://github.com/nii-energomash/automation/issues/31). Сейчас
 заполнены `.ci/actions/`, площадочные `actions/`, наборы npm, nuget и docker
 для обеих площадок, `dependabot.yml`, настройки раннера Gitea в
-`runners/gitea/`, раздел `deploy/` — установка службой systemd и конфиг,
-уезжающий внутрь образа, — и профиль `npm` в `project/`.
+`runners/gitea/`, раздел `deploy/` — установка службой systemd, `Dockerfile`
+профилей `dotnet` и `python` и конфиг, уезжающий внутрь образа, — и профиль
+`npm` в `project/`. У профиля `spa` вместо `Dockerfile` лежит заготовка
+`Dockerfile.draft`: она не копируется, почему — в
+[docs/deploy.md](docs/deploy.md).
 
 Шаблоны воркфлоу лежат под `ci-src/`, а не в корневом `.github/workflows/`,
 намеренно: триггеры у них настоящие (`push`, `schedule`, `release`), и в

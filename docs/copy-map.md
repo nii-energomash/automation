@@ -123,6 +123,9 @@ docker-набора: у потребителя это один файл `ci.yml`
 переименовываются вслед за именем службы: что на что заменить — в
 [deploy.md](deploy.md).
 
+Так же устроен и `Dockerfile`: два варианта, один целевой путь в корне
+репозитория, берётся подходящий языку проекта.
+
 | Здесь                                       | У потребителя                 |
 | ------------------------------------------- | ----------------------------- |
 | `deploy/systemd/dotnet/install.sh`          | `deploy/install.sh` — один из |
@@ -131,6 +134,10 @@ docker-набора: у потребителя это один файл `ci.yml`
 | `deploy/systemd/python/example-api.service` | `deploy/example-api.service`  |
 | `deploy/systemd/dotnet/api.env.example`     | `deploy/api.env.example`      |
 | `deploy/systemd/python/api.env.example`     | `deploy/api.env.example`      |
+| `deploy/docker/dotnet/Dockerfile`           | `Dockerfile` — один из        |
+| `deploy/docker/python/Dockerfile`           | `Dockerfile` — двух           |
+| `deploy/docker/dotnet/.dockerignore`        | `.dockerignore` — один из     |
+| `deploy/docker/python/.dockerignore`        | `.dockerignore` — двух        |
 | `deploy/docker/spa/nginx.conf`              | `docker/nginx.conf`           |
 
 ## Настройки проекта
