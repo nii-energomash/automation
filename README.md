@@ -41,6 +41,8 @@ deploy/                    как сервис доводится до рабо�
     dotnet/ python/        install.sh, *.service, *.env.example
   docker/
     spa/                   то, что уезжает внутрь образа
+project/                   конфиги проекта, которые читает сборка
+  npm/                     .npmrc и сторож при package-lock.json
 runners/gitea/             образцы config.yaml, compose и .env раннера
 docs/                      индекс и разделы по темам
 .github/                   своё, не шаблоны: самопроверка, dependabot.yml
@@ -50,8 +52,8 @@ docs/                      индекс и разделы по темам
 в [#31](https://github.com/nii-energomash/automation/issues/31). Сейчас
 заполнены `.ci/actions/`, площадочные `actions/`, наборы npm, nuget и docker
 для обеих площадок, `dependabot.yml`, настройки раннера Gitea в
-`runners/gitea/` и раздел `deploy/` — установка службой systemd и конфиг,
-уезжающий внутрь образа.
+`runners/gitea/`, раздел `deploy/` — установка службой systemd и конфиг,
+уезжающий внутрь образа, — и профиль `npm` в `project/`.
 
 Шаблоны воркфлоу лежат под `ci-src/`, а не в корневом `.github/workflows/`,
 намеренно: триггеры у них настоящие (`push`, `schedule`, `release`), и в
