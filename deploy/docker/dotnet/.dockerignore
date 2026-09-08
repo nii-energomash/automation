@@ -1,0 +1,41 @@
+# источник: nii-energomash/automation/deploy/docker/dotnet/.dockerignore
+# место: .dockerignore
+
+# В образ едет то, что нужно сборке сервиса, и то, что обязано ехать вместе с
+# ним как с распространяемым артефактом: исходники, файлы проектов, источники
+# пакетов и тексты лицензий. Остальное — оснастка команды, получателя у неё нет.
+#
+# Отдельно про bin/ и obj/: локальные каталоги сборки не только раздувают
+# контекст, но и могут подсунуть в образ вывод чужой конфигурации.
+
+.git/
+.gitattributes
+.gitignore
+
+**/bin/
+**/obj/
+
+.vs/
+**/.vs/
+.gigacode/
+.editorconfig
+
+.github/
+.gitea/
+.ci/
+
+tests/
+logs/
+
+# Файлы развёртывания без docker и документация: в образе юнит systemd
+# бессмыслен, а у документации внутри контейнера нет читателя.
+deploy/
+docs/
+
+*.slnx
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+
+Dockerfile
+.dockerignore

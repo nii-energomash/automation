@@ -1,0 +1,39 @@
+# источник: nii-energomash/automation/deploy/docker/python/.dockerignore
+# место: .dockerignore
+
+# В образ едет то, что нужно сервису, и то, что требуется приложить к нему как
+# к распространяемому артефакту: исходники, lock-файл целевой машины и тексты
+# лицензий. Всё остальное — оснастка команды, у неё получателя нет.
+
+.git/
+.gitattributes
+.gitignore
+
+__pycache__/
+*.py[cod]
+
+.venv/
+.cache/
+.ruff_cache/
+
+tools/
+sbom/
+docs/
+deploy/
+
+# Lock-файлы прочих окружений и исходные списки требований: в образ едет только
+# тот файл, который назван в Dockerfile. Перечень проектный — окружений у
+# проекта столько, сколько он поддерживает.
+requirements.in
+requirements-dev.in
+requirements-dev.txt
+requirements-workstation.txt
+
+.github/
+.gitea/
+.ci/
+.vscode/
+.editorconfig
+
+Dockerfile
+.dockerignore
