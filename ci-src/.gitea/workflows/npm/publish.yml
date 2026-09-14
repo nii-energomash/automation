@@ -65,6 +65,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Test
+        run: npm run test --if-present
+
       # Здесь остаётся PAT, в отличие от GitHub. Автоматический GITEA_TOKEN
       # не имеет авторизации на запись в реестр пакетов — документация Gitea
       # прямо предписывает обходиться персональным токеном.
