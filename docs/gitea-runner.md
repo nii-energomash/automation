@@ -100,6 +100,78 @@ docker-compose.example.yaml  → <runner-dir>/docker-compose.yaml
 файл дополнительно перечислен в `valid_volumes` — act_runner монтирует только
 то, что там разрешено.
 
+## Метка и образ задания
+
+Шаблоны из `ci-src/` пишут `runs-on: ubuntu-latest` — ту же метку, что на
+GitHub, чтобы файлы двух площадок не расходились. Но на GitHub за меткой стоит
+готовая машина, а у раннера Gitea — строка сопоставления в `config.yaml`, и
+читается она как три вещи, слипшиеся в одну:
+
+```
+"ubuntu-latest : docker:// docker.gitea.com/runner-images : ubuntu-latest"
+      метка       схема               образ                     тег
+```
+
+- **Метка** — произвольная строка. `ubuntu-latest` не значит «Ubuntu
+  последняя»: это имя, совпадающее с `runs-on` в шаблонах, и только.
+- **Образ** — то, в чём act_runner поднимет контейнер задания.
+
+### Почему не `ubuntu:latest`
+
+Официальный образ Ubuntu — голый rootfs, `node` в нём нет. А JavaScript-экшены
+(`checkout`, `cache`, `setup-dotnet`) act_runner исполняет внутри контейнера
+задания системным `node`, и на голой Ubuntu падает первый же шаг:
+
+```
+exec: "node": executable file not found in $PATH
+```
+
+Взять «тот же образ, что на GitHub» тоже нельзя: Docker-образа раннера GitHub
+не публикует. [actions/runner-images](https://github.com/actions/runner-images)
+— это Packer-описания виртуальных машин, а не то, что подставляется в
+`docker://`.
+
+### Откуда образ
+
+Раньше метка отображалась на `catthehacker/ubuntu:act-latest` — образ частного
+мейнтейнера, собранный для [nektos/act](https://github.com/nektos/act) по
+рецептам установки инструментов из `actions/runner-images`. Выбор был законным:
+[документация Gitea по меткам](https://docs.gitea.com/runner/labels) допускает
+community-образы act и ссылается на
+[IMAGES.md](https://github.com/nektos/act/blob/master/IMAGES.md), где он
+перечислен.
+
+Теперь Gitea выпускает собственные образы,
+[gitea/runner-images](https://gitea.com/gitea/runner-images), и
+`docker.gitea.com/runner-images:ubuntu-latest` стоит в метках по умолчанию
+[образца конфига act_runner](https://gitea.com/gitea/act_runner/src/branch/main/internal/pkg/config/config.example.yaml).
+Под капотом тот же образ: тег `ubuntu-latest` ведёт на `ubuntu-24.04`, а тот
+собран поверх `catthehacker/ubuntu:act-24.04`. Выигрыш в источнике, а не в
+содержимом: настройка не зависит от репозитория частного лица и совпадает с
+дефолтом апстрима.
+
+### `force_pull`
+
+Тег у метки плавающий, а act_runner по умолчанию берёт образ, уже лежащий на
+хосте. Без `container.force_pull: true` образ выкачивается один раз, при первом
+задании, и больше не обновляется: `latest` означает «latest на день
+установки». Опция стоит и в рекомендованной конфигурации gitea/runner-images.
+
+Чего она стоит:
+
+- **Обращение к реестру на каждое задание.** Если образ не менялся, слои не
+  качаются; первое задание после обновления образа стартует заметно дольше —
+  образ весит несколько гигабайт.
+- **Обновления приезжают молча** — как у `gitea/runner:latest` (см.
+  отклонения ниже), только ещё и без `docker compose pull`. Сломавшийся после
+  обновления образа шаг выглядит как CI, упавший сам.
+- **Старые версии копятся.** Вытесненный образ остаётся на диске без тега и
+  убирается `docker image prune`.
+
+Недоступный реестр задание не роняет: если копия образа уже на хосте, задание
+идёт на ней с предупреждением в логе. На образ, закреплённый по digest
+(`image@sha256:…`), опция не действует — он измениться не может.
+
 ## Кеш: тоже две разные вещи
 
 - **`actions-cache/`** — том раннера под выкачанные экшены. Живёт на хосте,
