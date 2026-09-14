@@ -20,12 +20,18 @@ runner:
   timeout: 3h
 
   # Метка задания → образ, в котором оно поднимается. Метка одна: шаблоны
-  # из ci-src/ объявляют только ubuntu-latest.
+  # из ci-src/ объявляют только ubuntu-latest. Из чего состоит строка и почему
+  # образ не голый ubuntu:latest — в docs/gitea-runner.md, раздел о метке.
   labels:
-    - "ubuntu-latest:docker://catthehacker/ubuntu:act-latest"
+    - "ubuntu-latest:docker://docker.gitea.com/runner-images:ubuntu-latest"
 
 container:
   network: bridge
+
+  # Образ задания выкачивается перед каждым заданием, даже если уже лежит на
+  # хосте. Тег у метки плавающий: без этого образ скачивается один раз и больше
+  # не обновляется. Цена — в docs/gitea-runner.md.
+  force_pull: true
 
   # При указании privileged: true контейнер задания получает root на хосте
   # (доступ к устройствам, может смонтировать диск хоста и писать куда угодно).
